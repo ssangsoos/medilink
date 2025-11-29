@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Building, Stethoscope, ArrowRight, ArrowLeft, Check, MapPin } from 'lucide-react';
 import { supabase } from '@/app/lib/supabase';
 import AddressSearch from '@/components/AddressSearch';
+import { useJsApiLoader } from '@react-google-maps/api'; // 🆕 구글 도구 가져오기
 
 // 직종 목록
 const JOB_CATEGORIES = [
@@ -22,6 +23,9 @@ const HOSPITAL_TYPES = [
   "요양병원", 
   "기타"
 ];
+
+// 🆕 구글 맵 라이브러리 설정
+const LIBRARIES: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
 
 function RegisterContent() {
   const searchParams = useSearchParams();
@@ -41,6 +45,13 @@ function RegisterContent() {
     jobCategory: '', hospitalType: '',
   });
 
+  // 🆕 구글 맵 로더 (좌표 변환기 준비)
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: LIBRARIES,
+  });
+
   useEffect(() => {
     if (initialRole === 'hospital' || initialRole === 'worker') {
       setStep(2);
@@ -53,21 +64,30 @@ function RegisterContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      let lat = 0, lng = 0;
-      try {
-        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY; 
-        if (apiKey && formData.address) {
-          const encodedAddress = encodeURIComponent(formData.address);
-          const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`);
-          const geoData = await geoRes.json();
-          if (geoData.results && geoData.results.length > 0) {
-            lat = geoData.results[0].geometry.location.lat;
-            lng = geoData.results[0].geometry.location.lng;
-          }
-        }
-      } catch (geoError) { console.error(geoError); }
 
+    try {
+      let lat = 0;
+      let lng = 0;
+
+      // 🆕 1. 좌표 변환 (Geocoder 사용 - CORS 문제 해결)
+      if (isLoaded && formData.address && window.google) {
+        try {
+          const geocoder = new window.google.maps.Geocoder();
+          const response = await geocoder.geocode({ address: formData.address });
+          
+          if (response.results && response.results.length > 0) {
+            lat = response.results[0].geometry.location.lat();
+            lng = response.results[0].geometry.location.lng();
+            console.log("좌표 변환 성공:", lat, lng);
+          } else {
+            console.error("좌표를 찾을 수 없습니다.");
+          }
+        } catch (geoError) {
+          console.error("구글 좌표 변환 에러:", geoError);
+        }
+      }
+
+      // 2. 가입 (Auth)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email, password: formData.password,
       });
@@ -76,13 +96,16 @@ function RegisterContent() {
 
       const fullAddress = formData.detailAddress ? `${formData.address} ${formData.detailAddress}` : formData.address;
       
+      // 3. 정보 저장 (DB)
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authData.user.id, email: formData.email, role: role, name: formData.name,
         hospital_name: role === 'hospital' ? formData.hospitalName : null,
         hospital_type: role === 'hospital' ? formData.hospitalType : null,
         license_number: role === 'worker' ? formData.licenseNumber : null,
         job_category: role === 'worker' ? formData.jobCategory : null,
-        phone_number: formData.phoneNumber, address: fullAddress, latitude: lat, longitude: lng,
+        phone_number: formData.phoneNumber, address: fullAddress, 
+        latitude: lat, // 변환된 좌표 저장
+        longitude: lng,
       });
       
       if (profileError) throw profileError;
@@ -142,23 +165,10 @@ function RegisterContent() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label><input type="password" required minLength={6} className="w-full p-3 border border-gray-300 rounded-lg" placeholder="6자리 이상" onChange={(e) => setFormData({...formData, password: e.target.value})}/></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">{role === 'hospital' ? '담당자 성함' : '성함'}</label><input type="text" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="홍길동" onChange={(e) => setFormData({...formData, name: e.target.value})}/></div>
               
-              {/* 🆕 [수정] 연락처 안내 문구 개선 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {role === 'hospital' ? '연락처 (지원자가 연락할 번호)' : '연락처 (휴대폰)'}
-                </label>
-                <input 
-                  type="tel" 
-                  required 
-                  className="w-full p-3 border border-gray-300 rounded-lg" 
-                  placeholder={role === 'hospital' ? "02-1234-5678 또는 010-..." : "010-1234-5678"}
-                  onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {role === 'hospital' 
-                    ? "⚠️ 채용 공고에 노출되어 지원자가 전화할 수 있습니다." 
-                    : "🔒 안심하세요! 개인 회원의 번호는 지도에 공개되지 않습니다."}
-                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{role === 'hospital' ? '연락처 (지원자가 연락할 번호)' : '연락처 (휴대폰)'}</label>
+                <input type="tel" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder={role === 'hospital' ? "02-1234-5678" : "010-1234-5678"} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}/>
+                <p className="text-xs text-gray-500 mt-1">{role === 'hospital' ? "⚠️ 채용 공고에 노출되어 지원자가 전화할 수 있습니다." : "🔒 안심하세요! 개인 회원의 번호는 지도에 공개되지 않습니다."}</p>
               </div>
 
               {role === 'hospital' && (
