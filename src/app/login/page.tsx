@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 import { LogIn, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
@@ -26,8 +26,8 @@ export default function LoginPage() {
       if (error) throw error;
 
       alert('로그인 성공! 메인으로 이동합니다.');
-      router.push('/'); // 메인 페이지로 이동
-      router.refresh(); // 화면 새로고침 (로그인 상태 반영)
+      router.push('/');
+      router.refresh();
 
     } catch (error: any) {
       alert(`로그인 실패: ${error.message}`);
@@ -52,7 +52,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black" // text-black 추가
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -63,7 +63,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black" // text-black 추가
                 placeholder="******"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

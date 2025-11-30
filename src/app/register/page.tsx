@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Building, Stethoscope, ArrowRight, ArrowLeft, Check, MapPin } from 'lucide-react';
 import { supabase } from '@/app/lib/supabase';
 import AddressSearch from '@/components/AddressSearch';
-import { useJsApiLoader } from '@react-google-maps/api'; // 🆕 구글 도구 가져오기
+import { useJsApiLoader } from '@react-google-maps/api';
 
 // 직종 목록
 const JOB_CATEGORIES = [
@@ -24,7 +24,6 @@ const HOSPITAL_TYPES = [
   "기타"
 ];
 
-// 🆕 구글 맵 라이브러리 설정
 const LIBRARIES: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
 
 function RegisterContent() {
@@ -45,7 +44,6 @@ function RegisterContent() {
     jobCategory: '', hospitalType: '',
   });
 
-  // 🆕 구글 맵 로더 (좌표 변환기 준비)
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -64,30 +62,21 @@ function RegisterContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       let lat = 0;
       let lng = 0;
 
-      // 🆕 1. 좌표 변환 (Geocoder 사용 - CORS 문제 해결)
       if (isLoaded && formData.address && window.google) {
         try {
           const geocoder = new window.google.maps.Geocoder();
           const response = await geocoder.geocode({ address: formData.address });
-          
           if (response.results && response.results.length > 0) {
             lat = response.results[0].geometry.location.lat();
             lng = response.results[0].geometry.location.lng();
-            console.log("좌표 변환 성공:", lat, lng);
-          } else {
-            console.error("좌표를 찾을 수 없습니다.");
           }
-        } catch (geoError) {
-          console.error("구글 좌표 변환 에러:", geoError);
-        }
+        } catch (geoError) { console.error(geoError); }
       }
 
-      // 2. 가입 (Auth)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email, password: formData.password,
       });
@@ -96,16 +85,13 @@ function RegisterContent() {
 
       const fullAddress = formData.detailAddress ? `${formData.address} ${formData.detailAddress}` : formData.address;
       
-      // 3. 정보 저장 (DB)
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authData.user.id, email: formData.email, role: role, name: formData.name,
         hospital_name: role === 'hospital' ? formData.hospitalName : null,
         hospital_type: role === 'hospital' ? formData.hospitalType : null,
         license_number: role === 'worker' ? formData.licenseNumber : null,
         job_category: role === 'worker' ? formData.jobCategory : null,
-        phone_number: formData.phoneNumber, address: fullAddress, 
-        latitude: lat, // 변환된 좌표 저장
-        longitude: lng,
+        phone_number: formData.phoneNumber, address: fullAddress, latitude: lat, longitude: lng,
       });
       
       if (profileError) throw profileError;
@@ -115,10 +101,12 @@ function RegisterContent() {
     } catch (error: any) { alert(`에러 발생: ${error.message}`); } finally { setLoading(false); }
   };
 
+  // 🎨 스타일 변수: 글씨를 진하게 만드는 핵심 클래스 (text-black, placeholder:text-gray-500)
+  const inputClass = "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black placeholder:text-gray-500";
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
-        {/* 왼쪽 패널 */}
         <div className={`md:w-1/2 p-12 text-white flex flex-col justify-between transition-colors duration-500 ${role === 'worker' ? 'bg-purple-800' : 'bg-blue-600'}`}>
           <div>
             <h1 className="text-3xl font-bold mb-4">{step === 1 ? "메디링크 시작하기" : "정보 입력"}</h1>
@@ -134,7 +122,6 @@ function RegisterContent() {
           </div>
         </div>
 
-        {/* 오른쪽 입력 폼 */}
         <div className="md:w-1/2 p-12 flex flex-col justify-center">
           {step === 1 && (
             <>
@@ -142,11 +129,11 @@ function RegisterContent() {
               <div className="space-y-4">
                 <button onClick={() => setRole('hospital')} className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all ${role === 'hospital' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}`}>
                   <div className={`p-3 rounded-full ${role === 'hospital' ? 'bg-blue-200' : 'bg-gray-100'}`}><Building size={24} className={role === 'hospital' ? 'text-blue-700' : 'text-gray-500'} /></div>
-                  <div className="text-left"><div className="font-bold text-lg">병원 / 의료기관</div><div className="text-sm text-gray-500">의료 인력이 필요합니다</div></div>
+                  <div className="text-left"><div className="font-bold text-lg text-black">병원 / 의료기관</div><div className="text-sm text-gray-500">의료 인력이 필요합니다</div></div>
                 </button>
                 <button onClick={() => setRole('worker')} className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all ${role === 'worker' ? 'border-purple-700 bg-purple-50 text-purple-800' : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'}`}>
                   <div className={`p-3 rounded-full ${role === 'worker' ? 'bg-purple-200' : 'bg-gray-100'}`}><Stethoscope size={24} className={role === 'worker' ? 'text-purple-800' : 'text-gray-500'} /></div>
-                  <div className="text-left"><div className="font-bold text-lg">의료 전문가</div><div className="text-sm text-gray-500">일할 병원을 찾고 있습니다</div></div>
+                  <div className="text-left"><div className="font-bold text-lg text-black">의료 전문가</div><div className="text-sm text-gray-500">일할 병원을 찾고 있습니다</div></div>
                 </button>
               </div>
               <button onClick={handleNext} disabled={!role} className={`mt-8 w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-colors ${role ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>다음 단계로 <ArrowRight size={20} /></button>
@@ -161,20 +148,20 @@ function RegisterContent() {
               
               <h2 className="text-2xl font-bold text-gray-900 mb-4">{role === 'hospital' ? '병원 정보 입력' : '의료인 프로필 입력'}</h2>
 
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">이메일</label><input type="email" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="name@example.com" onChange={(e) => setFormData({...formData, email: e.target.value})}/></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label><input type="password" required minLength={6} className="w-full p-3 border border-gray-300 rounded-lg" placeholder="6자리 이상" onChange={(e) => setFormData({...formData, password: e.target.value})}/></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">{role === 'hospital' ? '담당자 성함' : '성함'}</label><input type="text" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="홍길동" onChange={(e) => setFormData({...formData, name: e.target.value})}/></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">이메일</label><input type="email" required className={inputClass} placeholder="name@example.com" onChange={(e) => setFormData({...formData, email: e.target.value})}/></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label><input type="password" required minLength={6} className={inputClass} placeholder="6자리 이상" onChange={(e) => setFormData({...formData, password: e.target.value})}/></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">{role === 'hospital' ? '담당자 성함' : '성함'}</label><input type="text" required className={inputClass} placeholder="홍길동" onChange={(e) => setFormData({...formData, name: e.target.value})}/></div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{role === 'hospital' ? '연락처 (지원자가 연락할 번호)' : '연락처 (휴대폰)'}</label>
-                <input type="tel" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder={role === 'hospital' ? "02-1234-5678" : "010-1234-5678"} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}/>
+                <input type="tel" required className={inputClass} placeholder={role === 'hospital' ? "02-1234-5678 또는 010-..." : "010-1234-5678"} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}/>
                 <p className="text-xs text-gray-500 mt-1">{role === 'hospital' ? "⚠️ 채용 공고에 노출되어 지원자가 전화할 수 있습니다." : "🔒 안심하세요! 개인 회원의 번호는 지도에 공개되지 않습니다."}</p>
               </div>
 
               {role === 'hospital' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">병원 구분</label>
-                  <select required className="w-full p-3 border border-gray-300 rounded-lg bg-white" onChange={(e) => setFormData({...formData, hospitalType: e.target.value})}>
+                  <select required className={inputClass} onChange={(e) => setFormData({...formData, hospitalType: e.target.value})}>
                     <option value="">선택해주세요</option>
                     {HOSPITAL_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
@@ -184,7 +171,7 @@ function RegisterContent() {
               {role === 'worker' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">직종 선택</label>
-                  <select required className="w-full p-3 border border-gray-300 rounded-lg bg-white" onChange={(e) => setFormData({...formData, jobCategory: e.target.value})}>
+                  <select required className={inputClass} onChange={(e) => setFormData({...formData, jobCategory: e.target.value})}>
                     <option value="">선택해주세요</option>
                     {JOB_CATEGORIES.map((job) => <option key={job} value={job}>{job}</option>)}
                   </select>
@@ -196,17 +183,17 @@ function RegisterContent() {
                 <div onClick={() => setShowAddressModal(true)} className="w-full p-3 border border-gray-300 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-gray-50 bg-white"><MapPin size={18} className="text-gray-400" /><span className={formData.address ? "text-black" : "text-gray-400"}>{formData.address || "주소를 검색해주세요"}</span></div>
                 {formData.address && (
                   <div className="mt-2">
-                    <input type="text" placeholder="상세 주소 (예: 2층, 301호)" className="w-full p-3 border border-gray-300 rounded-lg" onChange={(e) => setFormData({...formData, detailAddress: e.target.value})}/>
+                    <input type="text" placeholder="상세 주소 (예: 2층, 301호)" className={inputClass} onChange={(e) => setFormData({...formData, detailAddress: e.target.value})}/>
                     {role === 'worker' && <p className="text-xs text-gray-500 mt-1">🔒 안심하세요! 개인 회원의 상세 주소는 지도에 공개되지 않습니다.</p>}
                   </div>
                 )}
               </div>
 
               {role === 'hospital' && (
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">병원명</label><input type="text" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="연세바로치과" onChange={(e) => setFormData({...formData, hospitalName: e.target.value})}/></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">병원명</label><input type="text" required className={inputClass} placeholder="연세바로치과" onChange={(e) => setFormData({...formData, hospitalName: e.target.value})}/></div>
               )}
               {role === 'worker' && (
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">면허번호</label><input type="text" required className="w-full p-3 border border-gray-300 rounded-lg" placeholder="123456" onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}/></div>
+                <div><label className="block text-sm font-medium text-gray-700 mb-1">면허번호</label><input type="text" required className={inputClass} placeholder="123456" onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}/></div>
               )}
 
               <button type="submit" disabled={loading} className={`mt-6 w-full py-4 rounded-lg font-bold text-lg text-white shadow-lg transition-transform hover:scale-[1.02] ${role === 'worker' ? 'bg-purple-800 hover:bg-purple-900' : 'bg-blue-600 hover:bg-blue-700'}`}>

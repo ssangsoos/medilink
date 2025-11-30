@@ -28,11 +28,24 @@ export default function MapComponent({ userLocation, markers = [] }: MapProps) {
         zoom={13}
         options={{ zoomControl: true, streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
       >
+        {/* 🆕 [추가됨] 지도 왼쪽 상단 안내 박스 (범례) */}
+        <div className="absolute top-2 left-2 bg-white/90 p-3 rounded-lg shadow-md z-10 text-xs font-bold border border-gray-200 pointer-events-none">
+          <div className="flex items-center gap-2 mb-1">
+            <img src="http://maps.google.com/mapfiles/ms/icons/red-dot.png" className="w-5 h-5" alt="공고"/>
+            <span className="text-black">채용 공고 (병원)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <img src="http://maps.google.com/mapfiles/ms/icons/purple-dot.png" className="w-5 h-5" alt="구직자"/>
+            <span className="text-black">의료인 (구직)</span>
+          </div>
+        </div>
+
         {/* 내 위치 */}
         {userLocation && userLocation.lat !== 0 && (
           <Marker position={userLocation} title="내 위치" icon="http://maps.google.com/mapfiles/ms/icons/blue-dot.png" />
         )}
 
+        {/* 마커들 */}
         {markers.map((marker) => (
           <>
             <Marker
@@ -42,24 +55,18 @@ export default function MapComponent({ userLocation, markers = [] }: MapProps) {
               onClick={() => setSelectedMarker(marker)}
               icon={marker.type === 'worker' ? 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png' : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'}
             />
-            {/* 🆕 의료인일 경우 반경(Circle) 그리기 */}
+            {/* 반경 원 그리기 */}
             {marker.type === 'worker' && marker.workRadius && (
               <Circle
                 center={marker.position}
-                radius={marker.workRadius * 1000} // km -> m 변환
-                options={{
-                  fillColor: '#800080', // 보라색
-                  fillOpacity: 0.1,
-                  strokeColor: '#800080',
-                  strokeOpacity: 0.3,
-                  strokeWeight: 1,
-                  clickable: false,
-                }}
+                radius={marker.workRadius * 1000}
+                options={{ fillColor: '#800080', fillOpacity: 0.1, strokeColor: '#800080', strokeOpacity: 0.3, strokeWeight: 1, clickable: false }}
               />
             )}
           </>
         ))}
 
+        {/* 정보창 */}
         {selectedMarker && (
           <InfoWindow position={selectedMarker.position} onCloseClick={() => setSelectedMarker(null)}>
             <div className="p-1 min-w-[200px]">
@@ -69,8 +76,6 @@ export default function MapComponent({ userLocation, markers = [] }: MapProps) {
               <div className="text-sm text-gray-600 space-y-1 mb-4">
                 <p className="flex items-center gap-2"><span>💰</span> <span className="font-bold text-black">{selectedMarker.info.sub}</span></p>
                 <p className="whitespace-pre-line text-xs">{selectedMarker.info.desc}</p>
-                {/* 반경 표시 추가 */}
-                {selectedMarker.workRadius && <p className="text-xs text-purple-600">📍 근무가능 반경: {selectedMarker.workRadius}km</p>}
               </div>
 
               <div className="flex gap-2">
