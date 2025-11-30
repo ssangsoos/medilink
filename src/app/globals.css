@@ -1,10 +1,10 @@
+/* 👇 이 3줄이 없어서 디자인이 다 깨진 겁니다! 꼭 있어야 해요! */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 🚨 핵심: 브라우저 시스템 설정을 무시하고 무조건 '라이트 모드'로 고정 */
 :root {
-  color-scheme: light; 
+  color-scheme: light;
 }
 
 body {
@@ -12,25 +12,9 @@ body {
   color: #000000;
 }
 
-/* 모든 입력창 강제 스타일링 (핵폭탄급 우선순위 !important 사용) */
+/* 입력창 글씨 진하게 (유지) */
 input, textarea, select {
-  color: #000000 !important;       /* 글씨는 무조건 검정 */
-  background-color: #ffffff !important; /* 배경은 무조건 흰색 */
-  border-color: #d1d5db !important;     /* 테두리는 진한 회색 */
-  -webkit-text-fill-color: #000000 !important; /* 사파리/크롬 자동완성 글씨도 검정 */
-}
-
-/* 입력하기 전 안내 문구(placeholder) 색상 */
-input::placeholder, textarea::placeholder {
-  color: #6b7280 !important; /* 진한 회색 */
-  opacity: 1 !important;
-}
-
-/* 자동완성 되었을 때 배경이 파랗게 변하는 것 방지 */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
-  -webkit-text-fill-color: #000000 !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
 }

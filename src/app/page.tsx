@@ -8,7 +8,12 @@ import { LogOut, Map as MapIcon, User, Building, Plus, X, MessageCircle, LogIn }
 import MapComponent from '@/components/Map';
 import ProfileModal from '@/components/ProfileModal';
 
-const JOB_CATEGORIES = ["의사", "치과의사", "한의사", "간호사", "간호조무사", "치과위생사", "코디네이터", "기타"];
+// 직종 목록
+const JOB_CATEGORIES = [
+  "의사", "치과의사", "한의사", 
+  "간호사", "간호조무사", "치과위생사", 
+  "코디네이터", "기타"
+];
 
 export default function Home() {
   const [session, setSession] = useState<any>(null);
@@ -25,7 +30,6 @@ export default function Home() {
     jobCategory: '치과위생사',
     description: '',
     hourlyRate: 0,
-    // 🆕 날짜 범위로 변경
     startDate: today,
     endDate: today,
     startTime: '09:00',
@@ -33,10 +37,12 @@ export default function Home() {
     kakaoLink: '', 
   });
 
+  // 데이터 불러오기
   const fetchData = async (currentUser: any) => {
     if (!currentUser) return;
 
     if (currentUser.role === 'worker') {
+      // 의료인은 공고를 봄
       const { data } = await supabase.from('job_postings').select(`*, profiles:hospital_id(hospital_name, latitude, longitude, phone_number)`).eq('status', 'open');
       if (data) {
         const markers = data.map((job: any) => ({
@@ -47,8 +53,7 @@ export default function Home() {
           info: {
             title: job.title,
             name: job.profiles?.hospital_name,
-            sub: `${job.hourly_rate.toLocaleString()}원`,
-            // 🆕 기간 표시 방식으로 변경
+            sub: `${job.hourly_rate?.toLocaleString() || 0}원`,
             desc: `${job.work_start_date} ~ ${job.work_end_date}\n(${job.start_time}~${job.end_time})`,
             kakaoLink: job.kakao_link,
             phoneNumber: job.profiles?.phone_number
@@ -57,6 +62,7 @@ export default function Home() {
         setMapMarkers(markers);
       }
     } else {
+      // 병원은 구직자를 봄
       const { data } = await supabase.from('profiles')
         .select('*')
         .eq('role', 'worker')
@@ -72,7 +78,7 @@ export default function Home() {
           info: {
             title: `${worker.job_category || '의료인'} 구직`,
             name: worker.name,
-            sub: `희망시급 ${worker.desired_hourly_rate?.toLocaleString()}원`,
+            sub: `희망시급 ${worker.desired_hourly_rate?.toLocaleString() || 0}원`,
             desc: `${worker.available_tasks || ''}\n가능시간: ${worker.available_time || ''}`,
             kakaoLink: worker.kakao_link,
             phoneNumber: worker.phone_number
@@ -102,47 +108,55 @@ export default function Home() {
   const handlePostJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+
     try {
-        const { error } = await supabase.from('job_postings').insert({
-            hospital_id: session.user.id,
-            title: jobData.title,
-            job_category: jobData.jobCategory,
-            description: jobData.description,
-            hourly_rate: jobData.hourlyRate,
-            // 🆕 시작일, 종료일 저장 (DB 컬럼명과 일치)
-            work_start_date: jobData.startDate,
-            work_end_date: jobData.endDate,
-            start_time: jobData.startTime,
-            end_time: jobData.endTime,
-            kakao_link: jobData.kakaoLink,
-            status: 'open'
-        });
-        if (error) throw error;
-        alert('채용 공고가 등록되었습니다!');
-        setShowJobModal(false);
-        // 초기화
-        setJobData({ 
-          title: '', 
-          jobCategory: '치과위생사', 
-          description: '', 
-          hourlyRate: 0, 
-          startDate: today, 
-          endDate: today, 
-          startTime: '09:00', 
-          endTime: '18:00', 
-          kakaoLink: '' 
-        });
-        fetchData(userProfile);
-    } catch(e: any) { alert(e.message); }
+      const { error } = await supabase.from('job_postings').insert({
+        hospital_id: session.user.id,
+        title: jobData.title,
+        job_category: jobData.jobCategory,
+        description: jobData.description,
+        hourly_rate: jobData.hourlyRate,
+        work_start_date: jobData.startDate,
+        work_end_date: jobData.endDate,
+        start_time: jobData.startTime,
+        end_time: jobData.endTime,
+        kakao_link: jobData.kakaoLink,
+        status: 'open'
+      });
+
+      if (error) throw error;
+
+      alert('채용 공고가 등록되었습니다!');
+      setShowJobModal(false);
+      setJobData({ 
+        title: '', 
+        jobCategory: '치과위생사', 
+        description: '', 
+        hourlyRate: 0, 
+        startDate: today, 
+        endDate: today, 
+        startTime: '09:00', 
+        endTime: '18:00', 
+        kakaoLink: '' 
+      });
+      fetchData(userProfile);
+
+    } catch (error: any) {
+      alert('공고 등록 실패: ' + error.message);
+    }
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = '/'; };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
 
-  // 🎨 공통 입력창 스타일 (글씨 진하게)
+  // 공통 입력창 스타일
   const inputClass = "w-full p-3 border border-gray-300 rounded-lg text-black placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none";
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-black">로딩 중...</div>;
 
+  // 🟦 로그인 상태 (대시보드)
   if (session) {
     return (
       <div className="h-screen flex flex-col bg-gray-50 relative">
@@ -175,36 +189,47 @@ export default function Home() {
           </div>
         </div>
 
+        {/* 공고 모달 */}
         {showJobModal && (
-            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
             <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">새 채용 공고</h2>
                 <button onClick={() => setShowJobModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
               </div>
+              
               <form onSubmit={handlePostJob} className="space-y-3">
-                 <div><label className="block text-xs font-bold text-gray-500 mb-1">공고 제목</label><input type="text" required className={inputClass} value={jobData.title} onChange={(e) => setJobData({...jobData, title: e.target.value})}/></div>
-                 <div><label className="block text-xs font-bold text-gray-500 mb-1">모집 직종</label><select className={inputClass} style={{backgroundColor:'white'}} value={jobData.jobCategory} onChange={(e) => setJobData({...jobData, jobCategory: e.target.value})}>{JOB_CATEGORIES.map((job) => <option key={job} value={job}>{job}</option>)}</select></div>
-                 
-                 {/* 🆕 날짜 범위 선택 (시작일 ~ 종료일) */}
-                 <div className="flex gap-3">
-                    <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-500 mb-1">시작 날짜</label>
-                        <input type="date" required className={inputClass} value={jobData.startDate} onChange={(e) => setJobData({...jobData, startDate: e.target.value})}/>
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-500 mb-1">종료 날짜</label>
-                        <input type="date" required className={inputClass} value={jobData.endDate} onChange={(e) => setJobData({...jobData, endDate: e.target.value})}/>
-                    </div>
-                 </div>
+                <div><label className="block text-xs font-bold text-gray-500 mb-1">공고 제목</label><input type="text" required className={inputClass} value={jobData.title} onChange={(e) => setJobData({...jobData, title: e.target.value})}/></div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">모집 직종</label>
+                  <select className={inputClass} value={jobData.jobCategory} onChange={(e) => setJobData({...jobData, jobCategory: e.target.value})}>
+                    {JOB_CATEGORIES.map((job) => <option key={job} value={job}>{job}</option>)}
+                  </select>
+                </div>
 
-                 <div><label className="block text-xs font-bold text-gray-500 mb-1">시급 (원)</label><input type="number" required className={inputClass} value={jobData.hourlyRate || ''} placeholder="0" onChange={(e) => setJobData({...jobData, hourlyRate: parseInt(e.target.value) || 0})}/></div>
-                 
-                 <div className="flex gap-3"><div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">시작 시간</label><input type="time" required className={inputClass} value={jobData.startTime} onChange={(e) => setJobData({...jobData, startTime: e.target.value})}/></div><div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">종료 시간</label><input type="time" required className={inputClass} value={jobData.endTime} onChange={(e) => setJobData({...jobData, endTime: e.target.value})}/></div></div>
-                 
-                 <div><label className="block text-xs font-bold text-gray-500 mb-1">오픈채팅방 링크 (선택)</label><div className="relative"><MessageCircle size={18} className="absolute left-3 top-3 text-yellow-500" /><input type="text" placeholder="https://open.kakao.com/..." className={`${inputClass} pl-10`} value={jobData.kakaoLink} onChange={(e) => setJobData({...jobData, kakaoLink: e.target.value})}/></div></div>
-                 <div><label className="block text-xs font-bold text-gray-500 mb-1">상세 내용</label><textarea required rows={3} className={`${inputClass} resize-none`} value={jobData.description} onChange={(e) => setJobData({...jobData, description: e.target.value})}/></div>
-                 <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 mt-2">공고 등록하기</button>
+                <div className="flex gap-3">
+                  <div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">시작 날짜</label><input type="date" required className={inputClass} value={jobData.startDate} onChange={(e) => setJobData({...jobData, startDate: e.target.value})}/></div>
+                  <div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">종료 날짜</label><input type="date" required className={inputClass} value={jobData.endDate} onChange={(e) => setJobData({...jobData, endDate: e.target.value})}/></div>
+                </div>
+
+                <div><label className="block text-xs font-bold text-gray-500 mb-1">시급 (원)</label><input type="number" required className={inputClass} value={jobData.hourlyRate || ''} placeholder="0" onChange={(e) => setJobData({...jobData, hourlyRate: parseInt(e.target.value) || 0})}/></div>
+                
+                <div className="flex gap-3">
+                  <div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">시작 시간</label><input type="time" required className={inputClass} value={jobData.startTime} onChange={(e) => setJobData({...jobData, startTime: e.target.value})}/></div>
+                  <div className="flex-1"><label className="block text-xs font-bold text-gray-500 mb-1">종료 시간</label><input type="time" required className={inputClass} value={jobData.endTime} onChange={(e) => setJobData({...jobData, endTime: e.target.value})}/></div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">오픈채팅방 링크 (선택)</label>
+                  <div className="relative">
+                    <MessageCircle size={18} className="absolute left-3 top-3 text-yellow-500" />
+                    <input type="text" placeholder="https://open.kakao.com/..." className={`${inputClass} pl-10`} value={jobData.kakaoLink} onChange={(e) => setJobData({...jobData, kakaoLink: e.target.value})}/>
+                  </div>
+                </div>
+
+                <div><label className="block text-xs font-bold text-gray-500 mb-1">상세 내용</label><textarea required rows={3} className={`${inputClass} resize-none`} value={jobData.description} onChange={(e) => setJobData({...jobData, description: e.target.value})}/></div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 mt-2">공고 등록하기</button>
               </form>
             </div>
           </div>
@@ -215,7 +240,7 @@ export default function Home() {
     );
   }
 
-  // 비로그인 상태 (랜딩) - 기존 코드 유지
+  // ⬜️ 비로그인 상태 (랜딩)
   return (
     <div className="min-h-screen bg-white">
       <nav className="p-6 flex justify-between items-center max-w-6xl mx-auto"><div className="text-2xl font-bold text-blue-600">Medilink</div><Link href="/login" className="text-gray-600 hover:text-blue-600 font-medium">로그인</Link></nav>
