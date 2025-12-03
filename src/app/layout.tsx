@@ -1,7 +1,6 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // 👈 🚨 [핵심] 이 줄이 있어야 디자인이 적용됩니다!
+import "./globals.css"; // 👈 이 줄이 제일 중요합니다!
 
 const inter = Inter({ subsets: ["latin"] });
 

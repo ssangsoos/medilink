@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 1. 다크모드 무시하고 무조건 라이트 모드 고정 */
+/* 1. 기본 설정: 무조건 흰 배경에 검은 글씨 */
 :root {
   color-scheme: light;
 }
@@ -12,9 +12,9 @@ body {
   color: #000000;
 }
 
-/* 2. 입력창 글씨가 안 보이는 문제 해결 (안전한 방식) */
+/* 2. 입력창 글씨가 안 보이는 문제 해결 (안전장치) */
 input, textarea, select {
-  color: #000000; /* 글씨 검정 */
-  background-color: #ffffff; /* 배경 흰색 */
-  border: 1px solid #d1d5db; /* 테두리 회색 */
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
 }
