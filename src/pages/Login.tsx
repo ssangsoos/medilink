@@ -39,10 +39,10 @@ export default function Login() {
             <Stethoscope className="h-8 w-8 text-blue-600" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            메디링크 로그인
+            Medinoti 로그인
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            병원과 의료인을 연결하는 가장 빠른 방법
+            의료와 나를 잇다, Medinoti
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export default function Login() {
                 type="email"
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="example@medilink.com"
+                placeholder="example@medinoti.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -83,7 +83,8 @@ export default function Login() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               계정이 없으신가요?{' '}
-              <Link to="/register" className="font-bold text-blue-600 hover:text-blue-500">
+              {/* 회원이 아니면 첫 화면으로 가서 병원/의료인을 고르게 하는 것이 좋습니다 */}
+              <Link to="/" className="font-bold text-blue-600 hover:text-blue-500">
                 회원가입 하러 가기
               </Link>
             </p>

@@ -1,65 +1,84 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, ArrowLeft, Search } from 'lucide-react';
-import { useDaumPostcodePopup } from 'react-daum-postcode';
+// MapPin 제거됨 (에러 수정 버전)
+import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
+import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
 import { supabase } from '../lib/supabase';
-import { getCoordinates } from '../lib/geocode'; // 방금 만든 변환기 가져오기
+import PrivacyConsent from '../components/PrivacyConsent'; 
+
+const libraries: ("places")[] = ["places"];
+const koreaBounds = { north: 38.63, south: 33.00, east: 132.00, west: 124.00 };
+const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px', marginTop: '16px' };
 
 export default function RegisterHospital() {
   const navigate = useNavigate();
-  const open = useDaumPostcodePopup();
-
   const [loading, setLoading] = useState(false);
-  const [address, setAddress] = useState('');
-  const [detailAddress, setDetailAddress] = useState('');
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+  const [isManualMode, setIsManualMode] = useState(false);
   const [hospitalName, setHospitalName] = useState('');
+  const [address, setAddress] = useState('');
   const [hospitalType, setHospitalType] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+  const [location, setLocation] = useState({ lat: 37.5665, lng: 126.9780 });
+  const [isMapVisible, setIsMapVisible] = useState(false);
 
-  const handleComplete = (data: any) => {
-    let fullAddress = data.address;
-    let extraAddress = '';
-    if (data.addressType === 'R') {
-      if (data.bname !== '') extraAddress += data.bname;
-      if (data.buildingName !== '') extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
-      fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
-    }
-    setAddress(fullAddress);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+
+  const onLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocompleteInstance);
   };
 
-  const handleClick = () => {
-    open({ onComplete: handleComplete });
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) return; 
+      
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      
+      setLocation({ lat, lng });
+      setHospitalName(place.name || '');
+      setAddress(place.formatted_address || '');
+      if (place.formatted_phone_number) setPhone(place.formatted_phone_number);
+      
+      setIsMapVisible(true);
+      setIsManualMode(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') e.preventDefault(); 
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    if (!email || !password || !hospitalName || !address || !phone) {
-      alert("모든 정보를 입력해주세요.");
-      setLoading(false);
+    if (!agreePrivacy) {
+      alert("개인정보 수집 및 이용에 동의해주세요.");
       return;
     }
 
-    try {
-      // 1. 주소를 좌표로 변환 (추가된 부분!)
-      const coords = await getCoordinates(address);
-      const lat = coords ? coords.lat : 0;
-      const lng = coords ? coords.lng : 0;
+    if (!email || !password || !hospitalName || !address) {
+      alert("병원 정보를 모두 입력해주세요.");
+      return;
+    }
 
-      // 2. 로그인 계정 생성
+    setLoading(true);
+
+    try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (authError) throw authError;
-      if (!authData.user) throw new Error("회원가입 실패 (유저 정보 없음)");
+      if (!authData.user) throw new Error("회원가입 실패");
 
-      // 3. 프로필 저장 (위도, 경도 포함!)
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -74,21 +93,30 @@ export default function RegisterHospital() {
             address: address,
             detail_address: detailAddress,
             phone: phone,
-            latitude: lat,   // 저장!
-            longitude: lng   // 저장!
+            latitude: location.lat,
+            longitude: location.lng,
+            is_exposed: true 
           }
         ]);
 
       if (profileError) throw profileError;
-
-      alert("회원가입이 완료되었습니다! 로그인 해주세요.");
+      alert("가입이 완료되었습니다! 로그인 페이지로 이동합니다.");
       navigate('/login');
 
     } catch (error: any) {
-      console.error("가입 에러:", error);
-      alert("가입 중 오류가 발생했습니다: " + error.message);
+      console.error(error);
+      alert("오류: " + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleManualMode = () => {
+    setIsManualMode(!isManualMode);
+    if (!isManualMode) {
+        setIsMapVisible(false);
+        setAddress('');
+        setHospitalName('');
     }
   };
 
@@ -100,71 +128,105 @@ export default function RegisterHospital() {
             <Building2 className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-extrabold text-white">병원 회원가입</h2>
-          <p className="text-blue-100 mt-2">인력이 필요한 병원/의료기관용</p>
+          <p className="text-blue-100 mt-2">지도를 통해 정확한 위치를 등록하세요</p>
         </div>
 
-        <form className="p-8 space-y-6" onSubmit={handleRegister}>
-          {/* 입력 폼 내용은 기존과 동일하므로 유지 */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">병원명</label>
-              <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="예: 연세바로치과" />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">병원 분류</label>
-              <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium bg-white">
-                <option value="">선택해주세요</option>
-                <option value="dental">치과 병의원</option>
-                <option value="medical">일반 의과 병의원</option>
-                <option value="oriental">한방 병의원</option>
-                <option value="nursing">요양병원</option>
-                <option value="other">기타</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">사업자 등록번호</label>
-              <input type="text" value={businessNumber} onChange={(e) => setBusinessNumber(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="000-00-00000" />
-            </div>
-          </div>
-          <hr className="border-gray-100" />
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">병원 주소</label>
-              <div className="flex gap-2">
-                <input type="text" readOnly value={address} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-black font-medium" placeholder="주소 검색 버튼을 눌러주세요" />
-                <button type="button" onClick={handleClick} className="px-4 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-black flex items-center gap-2">
-                  <Search size={18} /> 검색
+        <LoadScript 
+            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 
+            libraries={libraries}
+            language="ko" 
+            region="KR"
+        >
+          <form className="p-8 space-y-6" onSubmit={handleRegister}>
+            
+            <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-bold text-blue-900 flex items-center gap-1">
+                  {isManualMode ? <Edit size={16}/> : <Search size={16}/>} 
+                  {isManualMode ? "직접 입력 모드" : "병원 검색 (구글 맵)"}
+                </label>
+                <button type="button" onClick={toggleManualMode} className="text-xs text-blue-600 underline">
+                    {isManualMode ? "다시 검색하기" : "검색이 안 되나요?"}
                 </button>
               </div>
+              
+              {!isManualMode ? (
+                  <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ bounds: koreaBounds, componentRestrictions: { country: "kr" }, fields: ["geometry", "name", "formatted_address", "formatted_phone_number"] }}>
+                    {/* ★ 수정 포인트: placeholder "예: 스마일업의원"으로 변경 */}
+                    <input type="text" placeholder="예: 스마일업의원" onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
+                  </Autocomplete>
+              ) : (
+                  <div className="text-sm text-gray-600 p-2 bg-white/50 rounded">병원을 찾을 수 없다면 직접 입력해주세요.</div>
+              )}
+
+              {isMapVisible && !isManualMode && (
+                <div className="relative mt-4">
+                  <GoogleMap mapContainerStyle={mapContainerStyle} center={location} zoom={18} options={{ disableDefaultUI: true }}>
+                    <Marker position={location} />
+                  </GoogleMap>
+                </div>
+              )}
             </div>
-            <div>
-              <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="상세 주소 (예: 3층)" />
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">병원명</label>
+                <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl font-bold ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder="자동 입력됨" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">주소</label>
+                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder="자동 입력됨" />
+              </div>
+              <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="상세 주소 (예: 3층)" />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">연락처</label>
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="02-000-0000" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">병원 분류</label>
+                  <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white">
+                    <option value="">선택</option>
+                    <option value="dental">치과 병의원</option>
+                    <option value="medical">일반 의과 병의원</option>
+                    <option value="oriental">한방 병의원</option>
+                    <option value="nursing">요양병원</option>
+                    <option value="other">기타</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">사업자 등록번호</label>
+                <input type="text" value={businessNumber} onChange={(e) => setBusinessNumber(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="000-00-00000" />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">연락처 (지원자가 연락할 번호)</label>
-              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="010-0000-0000" />
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">아이디 (이메일)</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="hospital@example.com" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">비밀번호</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="••••••••" />
+              </div>
             </div>
-          </div>
-          <hr className="border-gray-100" />
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">이메일 (아이디)</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="hospital@medilink.com" />
+
+            <PrivacyConsent checked={agreePrivacy} onChange={setAgreePrivacy} />
+
+            <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-shadow shadow-lg disabled:bg-gray-400 mt-4">
+              {loading ? '가입 처리 중...' : '병원 가입 완료하기'}
+            </button>
+            
+            <div className="text-center pt-2">
+              <Link to="/" className="text-gray-500 hover:text-gray-900 font-medium inline-flex items-center gap-1">
+                <ArrowLeft size={16} /> 첫 화면으로 돌아가기
+              </Link>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-1">비밀번호</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black font-medium" placeholder="••••••••" />
-            </div>
-          </div>
-          <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg mt-6 disabled:bg-gray-400">
-            {loading ? '가입 처리 중...' : '병원 가입 완료하기'}
-          </button>
-          <div className="text-center pt-2">
-            <Link to="/" className="text-gray-500 hover:text-gray-900 font-medium inline-flex items-center gap-1">
-              <ArrowLeft size={16} /> 첫 화면으로 돌아가기
-            </Link>
-          </div>
-        </form>
+          </form>
+        </LoadScript>
       </div>
     </div>
   );

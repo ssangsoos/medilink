@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
-import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit } from 'lucide-react'; 
+import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2 } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 
 export default function EditProfile() {
@@ -16,7 +16,6 @@ export default function EditProfile() {
   const [experience, setExperience] = useState('');
   const [desiredHourlyRate, setDesiredHourlyRate] = useState('');
   const [workRadius, setWorkRadius] = useState('5');
-  
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
@@ -81,7 +80,6 @@ export default function EditProfile() {
         detail_address: detailAddress
       };
 
-      // 주소 변경 시 좌표 업데이트
       if (address) {
         const coords = await getCoordinates(address);
         if (coords) {
@@ -107,6 +105,41 @@ export default function EditProfile() {
     }
   };
 
+  // ★ 수정된 회원 탈퇴 함수 (안전하고 확실한 방식)
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('정말로 탈퇴하시겠습니까?\n이 작업은 되돌릴 수 없으며, 모든 정보가 즉시 삭제됩니다.')) return;
+
+    try {
+      setLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+          alert("로그인 정보가 없습니다.");
+          return;
+      }
+
+      // 1. 프로필 데이터 삭제 (이력서, 지도에서 사라짐)
+      const { error: deleteError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // 2. 로그아웃 처리
+      await supabase.auth.signOut();
+
+      alert('탈퇴가 완료되었습니다. Medinoti를 이용해 주셔서 감사합니다.');
+      navigate('/');
+      
+    } catch (error: any) {
+      console.error(error);
+      alert('탈퇴 처리 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (initialLoading) return <div className="p-8 text-center">정보 불러오는 중...</div>;
 
   return (
@@ -119,7 +152,6 @@ export default function EditProfile() {
         <form onSubmit={handleSave} className="p-8 space-y-6">
           <div className="space-y-4">
             <div>
-              {/* 수정된 부분: Edit 아이콘 추가하여 사용 처리 */}
               <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
                 <Edit size={16} /> 이름
               </label>
@@ -197,6 +229,18 @@ export default function EditProfile() {
             <ArrowLeft size={16} /> 취소하고 돌아가기
           </button>
         </form>
+        
+        {/* 회원 탈퇴 구역 */}
+        <div className="bg-red-50 p-6 text-center mt-4 border-t border-red-100">
+            <p className="text-xs text-red-600 mb-3 font-medium">더 이상 서비스를 이용하지 않으시나요?</p>
+            <button 
+              type="button" 
+              onClick={handleDeleteAccount}
+              className="text-red-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-red-700 mx-auto px-4 py-2 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+            >
+              <Trash2 size={16} /> 회원 탈퇴하기
+            </button>
+        </div>
       </div>
     </div>
   );
