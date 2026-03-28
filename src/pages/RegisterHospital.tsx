@@ -208,11 +208,11 @@ export default function RegisterHospital() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-1">아이디 (이메일)</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="hospital@example.com" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="new-email" className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="hospital@example.com" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-1">비밀번호</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="••••••••" />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="••••••••" />
               </div>
             </div>
 
