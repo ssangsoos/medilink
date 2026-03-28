@@ -7,12 +7,20 @@ import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/ap
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 37.5665, lng: 126.9780 };
 
-const WORKER_TYPES = ["치과의사", "의사", "한의사", "치과위생사", "간호사", "간호조무사", "코디네이터"];
+const WORKER_TYPES = [
+  "간호사", "간호조무사", "물리치료사", "방사선사", "보건교육사",
+  "수의사", "안경사", "약사", "언어재활사", "영양사",
+  "위생사", "의무기록사", "의사", "의지보조기기사", "임상병리사",
+  "작업치료사", "조산사", "치과기공사", "치과위생사", "치과의사",
+  "코디네이터", "한약사", "한의사", "응급구조사(1급)", "응급구조사(2급)"
+];
 const HOSPITAL_TYPES = [
+  { label: "동물병원", value: "animal" },
+  { label: "약국", value: "pharmacy" },
+  { label: "요양병원", value: "nursing" },
+  { label: "일반 의과", value: "medical" },
   { label: "치과", value: "dental" },
-  { label: "의과", value: "medical" },
   { label: "한방", value: "oriental" },
-  { label: "요양", value: "nursing" },
   { label: "기타", value: "other" }
 ];
 

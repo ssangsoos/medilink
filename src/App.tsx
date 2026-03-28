@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import PostJob from './pages/PostJob';
 import EditProfile from './pages/EditProfile';
 import EditHospital from './pages/EditHospital'; // 새로 추가
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 function App() {
   return (
@@ -22,7 +24,11 @@ function App() {
         
         {/* 병원 정보 수정 경로 추가 */}
         <Route path="/hospital/edit" element={<EditHospital />} />
-        
+
+        {/* 법적 페이지 */}
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

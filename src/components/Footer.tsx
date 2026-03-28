@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function Footer() {
   return (
     <footer className="bg-gray-100 py-8 px-4 mt-auto border-t border-gray-200">
@@ -35,8 +37,19 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* 법적 링크 */}
+        <div className="mt-6 flex gap-4 text-xs">
+          <Link to="/privacy" className="text-gray-500 hover:text-blue-600 underline">
+            개인정보처리방침
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link to="/terms" className="text-gray-500 hover:text-blue-600 underline">
+            이용약관
+          </Link>
+        </div>
+
         {/* 카피라이트 */}
-        <div className="mt-8 text-xs text-gray-400 border-t border-gray-200 pt-4">
+        <div className="mt-4 text-xs text-gray-400 border-t border-gray-200 pt-4">
           Copyright © {new Date().getFullYear()} SmileUp Corp. All rights reserved.
         </div>
       </div>

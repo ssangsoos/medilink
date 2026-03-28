@@ -27,7 +27,7 @@ export default function RegisterHospital() {
   const [location, setLocation] = useState({ lat: 37.5665, lng: 126.9780 });
   const [isMapVisible, setIsMapVisible] = useState(false);
 
-  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAll, setAgreeAll] = useState(false);
 
   const onLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -58,8 +58,8 @@ export default function RegisterHospital() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!agreePrivacy) {
-      alert("개인정보 수집 및 이용에 동의해주세요.");
+    if (!agreeAll) {
+      alert("필수 약관에 모두 동의해주세요.");
       return;
     }
 
@@ -188,10 +188,12 @@ export default function RegisterHospital() {
                   <label className="block text-sm font-bold text-gray-900 mb-1">병원 분류</label>
                   <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white">
                     <option value="">선택</option>
-                    <option value="dental">치과 병의원</option>
-                    <option value="medical">일반 의과 병의원</option>
-                    <option value="oriental">한방 병의원</option>
+                    <option value="animal">동물병원</option>
+                    <option value="pharmacy">약국</option>
                     <option value="nursing">요양병원</option>
+                    <option value="medical">일반 의과 병의원</option>
+                    <option value="dental">치과 병의원</option>
+                    <option value="oriental">한방 병의원</option>
                     <option value="other">기타</option>
                   </select>
                 </div>
@@ -214,7 +216,7 @@ export default function RegisterHospital() {
               </div>
             </div>
 
-            <PrivacyConsent checked={agreePrivacy} onChange={setAgreePrivacy} />
+            <PrivacyConsent onValidChange={setAgreeAll} />
 
             <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-shadow shadow-lg disabled:bg-gray-400 mt-4">
               {loading ? '가입 처리 중...' : '병원 가입 완료하기'}

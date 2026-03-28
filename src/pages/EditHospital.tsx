@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
-import { ArrowLeft, Search, Phone, Building2, Trash2 } from 'lucide-react'; 
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Search, Phone, Building2, Trash2, Shield } from 'lucide-react'; 
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 
 export default function EditHospital() {
@@ -98,7 +99,7 @@ export default function EditHospital() {
 
   // ★ 수정된 회원 탈퇴 함수 (가장 안전한 방식)
   const handleDeleteAccount = async () => {
-    if (!window.confirm('정말로 탈퇴하시겠습니까?\n이 작업은 되돌릴 수 없으며, 모든 정보가 즉시 삭제됩니다.')) return;
+    if (!window.confirm('정말로 탈퇴하시겠습니까?\n\n• 병원 정보 및 채용공고는 즉시 삭제됩니다.\n• 단, 관계 법령에 따라 아래 정보는 일정 기간 보관됩니다.\n  - 계약/청약철회 기록: 5년\n  - 소비자 불만/분쟁 처리 기록: 3년\n  - 접속 로그: 3개월')) return;
 
     try {
       setLoading(true);
@@ -152,10 +153,12 @@ export default function EditHospital() {
               <label className="block text-sm font-bold text-gray-900 mb-1">병원 분류</label>
               <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">선택해주세요</option>
-                <option value="dental">치과 병의원</option>
-                <option value="medical">일반 의과 병의원</option>
-                <option value="oriental">한방 병의원</option>
+                <option value="animal">동물병원</option>
+                <option value="pharmacy">약국</option>
                 <option value="nursing">요양병원</option>
+                <option value="medical">일반 의과 병의원</option>
+                <option value="dental">치과 병의원</option>
+                <option value="oriental">한방 병의원</option>
                 <option value="other">기타</option>
               </select>
             </div>
@@ -195,11 +198,27 @@ export default function EditHospital() {
           </button>
         </form>
 
+        {/* 개인정보 권리 안내 */}
+        <div className="bg-blue-50 p-6 border-t border-blue-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield size={16} className="text-blue-600" />
+            <h3 className="text-sm font-bold text-blue-900">개인정보 권리 안내</h3>
+          </div>
+          <ul className="text-xs text-blue-800 space-y-1 mb-3">
+            <li>• 위 양식에서 병원 정보를 직접 열람·수정할 수 있습니다.</li>
+            <li>• 회원 탈퇴를 통해 개인정보 삭제를 요청할 수 있습니다.</li>
+            <li>• 추가 문의: ssangsoos@gmail.com / 032-473-2222</li>
+          </ul>
+          <Link to="/privacy" className="text-xs text-blue-600 underline hover:text-blue-800">
+            개인정보처리방침 보기
+          </Link>
+        </div>
+
         {/* 회원 탈퇴 구역 */}
-        <div className="bg-red-50 p-6 text-center mt-4 border-t border-red-100">
+        <div className="bg-red-50 p-6 text-center border-t border-red-100">
             <p className="text-xs text-red-600 mb-3 font-medium">서비스 이용을 중단하시겠습니까?</p>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleDeleteAccount}
               className="text-red-500 text-sm font-bold flex items-center justify-center gap-2 hover:text-red-700 mx-auto px-4 py-2 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
             >

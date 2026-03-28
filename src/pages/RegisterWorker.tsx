@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info } from 'lucide-react'; // Info 아이콘 추가
+import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
+import PrivacyConsent from '../components/PrivacyConsent';
 
 export default function RegisterWorker() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function RegisterWorker() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreeAll, setAgreeAll] = useState(false);
 
   const handleComplete = (data: any) => {
     let fullAddress = data.address;
@@ -36,6 +38,12 @@ export default function RegisterWorker() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!agreeAll) {
+      alert("필수 약관에 모두 동의해주세요.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -112,13 +120,31 @@ export default function RegisterWorker() {
                 <label className="block text-sm font-bold text-gray-900 mb-1">면허/자격 종류</label>
                 <select value={licenseType} onChange={(e) => setLicenseType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none bg-white">
                   <option value="">선택</option>
-                  <option value="치과의사">치과의사</option>
-                  <option value="의사">의사</option>
-                  <option value="한의사">한의사</option>
-                  <option value="치과위생사">치과위생사</option>
                   <option value="간호사">간호사</option>
                   <option value="간호조무사">간호조무사</option>
+                  <option value="물리치료사">물리치료사</option>
+                  <option value="방사선사">방사선사</option>
+                  <option value="보건교육사">보건교육사</option>
+                  <option value="수의사">수의사</option>
+                  <option value="안경사">안경사</option>
+                  <option value="약사">약사</option>
+                  <option value="언어재활사">언어재활사</option>
+                  <option value="영양사">영양사</option>
+                  <option value="위생사">위생사</option>
+                  <option value="의무기록사">의무기록사</option>
+                  <option value="의사">의사</option>
+                  <option value="의지보조기기사">의지보조기기사</option>
+                  <option value="임상병리사">임상병리사</option>
+                  <option value="작업치료사">작업치료사</option>
+                  <option value="조산사">조산사</option>
+                  <option value="치과기공사">치과기공사</option>
+                  <option value="치과위생사">치과위생사</option>
+                  <option value="치과의사">치과의사</option>
                   <option value="코디네이터">코디네이터</option>
+                  <option value="한약사">한약사</option>
+                  <option value="한의사">한의사</option>
+                  <option value="응급구조사(1급)">응급구조사(1급)</option>
+                  <option value="응급구조사(2급)">응급구조사(2급)</option>
                 </select>
               </div>
               <div>
@@ -167,6 +193,8 @@ export default function RegisterWorker() {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="••••••••" />
             </div>
           </div>
+
+          <PrivacyConsent onValidChange={setAgreeAll} showThirdParty />
 
           <button disabled={loading} className="w-full bg-purple-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-950 transition-colors shadow-lg mt-6 disabled:bg-gray-400">
             {loading ? '가입 처리 중...' : '의료인 가입 완료하기'}
