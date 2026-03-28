@@ -186,11 +186,11 @@ export default function RegisterWorker() {
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">이메일 (아이디)</label>
               {/* ★ 이메일 예시 변경: worker@medinoti.com */}
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="new-email" className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="worker@medinoti.com" />
+              <input type="text" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" name="register-worker-email" className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="worker@medinoti.com" />
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">비밀번호</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="••••••••" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" name="register-worker-pw" className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="••••••••" />
             </div>
           </div>
 
