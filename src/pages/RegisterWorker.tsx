@@ -108,7 +108,10 @@ export default function RegisterWorker() {
           <p className="text-purple-200 mt-2">당신의 능력을 필요로 하는 병원과 연결해드립니다</p>
         </div>
 
-        <form className="p-8 space-y-6" onSubmit={handleRegister}>
+        <form className="p-8 space-y-6" onSubmit={handleRegister} autoComplete="off">
+          {/* Chrome 자동완성 흡수용 더미 필드 */}
+          <input type="text" name="fake_email" style={{ display: 'none' }} tabIndex={-1} />
+          <input type="password" name="fake_pw" style={{ display: 'none' }} tabIndex={-1} />
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">이름</label>

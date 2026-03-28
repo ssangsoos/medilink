@@ -137,8 +137,11 @@ export default function RegisterHospital() {
             language="ko" 
             region="KR"
         >
-          <form className="p-8 space-y-6" onSubmit={handleRegister}>
-            
+          <form className="p-8 space-y-6" onSubmit={handleRegister} autoComplete="off">
+            {/* Chrome 자동완성 흡수용 더미 필드 */}
+            <input type="text" name="fake_email" style={{ display: 'none' }} tabIndex={-1} />
+            <input type="password" name="fake_pw" style={{ display: 'none' }} tabIndex={-1} />
+
             <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-blue-900 flex items-center gap-1">
