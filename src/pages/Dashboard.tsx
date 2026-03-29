@@ -312,6 +312,13 @@ export default function Dashboard() {
                  <div className="text-sm text-gray-500 truncate mt-1">
                     {getDisplayAddress(item)}
                  </div>
+                 {userRole === 'worker' && item.seeking_positions?.length > 0 && (
+                   <div className="flex flex-wrap gap-1 mt-2">
+                     {item.seeking_positions.map((pos: string) => (
+                       <span key={pos} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{pos}</span>
+                     ))}
+                   </div>
+                 )}
                </div>
              ))}
              {filteredItems.length === 0 && (
@@ -379,6 +386,15 @@ export default function Dashboard() {
                         ) : (
                             <>
                                 <div><span className="font-bold text-gray-900">분류:</span> {HOSPITAL_TYPES.find(t => t.value === selectedPin.hospital_type)?.label || '기타'}</div>
+                                {selectedPin.seeking_positions?.length > 0 && (
+                                    <div><span className="font-bold text-gray-900">구인:</span> {selectedPin.seeking_positions.join(', ')}</div>
+                                )}
+                                {selectedPin.offered_hourly_rate && (
+                                    <div><span className="font-bold text-gray-900">제시 시급:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}원</div>
+                                )}
+                                {selectedPin.employment_type && (
+                                    <div><span className="font-bold text-gray-900">고용 형태:</span> {selectedPin.employment_type}</div>
+                                )}
                             </>
                         )}
                     </div>

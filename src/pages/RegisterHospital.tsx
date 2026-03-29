@@ -28,6 +28,23 @@ export default function RegisterHospital() {
   const [isMapVisible, setIsMapVisible] = useState(false);
 
   const [agreeAll, setAgreeAll] = useState(false);
+  const [seekingPositions, setSeekingPositions] = useState<string[]>([]);
+  const [offeredHourlyRate, setOfferedHourlyRate] = useState('');
+  const [employmentType, setEmploymentType] = useState('');
+
+  const POSITION_OPTIONS = [
+    "간호사", "간호조무사", "물리치료사", "방사선사", "보건교육사",
+    "수의사", "안경사", "약사", "언어재활사", "영양사",
+    "위생사", "의무기록사", "의사", "의지보조기기사", "임상병리사",
+    "작업치료사", "조산사", "치과기공사", "치과위생사", "치과의사",
+    "코디네이터", "한약사", "한의사", "응급구조사(1급)", "응급구조사(2급)"
+  ];
+
+  const togglePosition = (pos: string) => {
+    setSeekingPositions(prev =>
+      prev.includes(pos) ? prev.filter(p => p !== pos) : [...prev, pos]
+    );
+  };
 
   const onLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
     setAutocomplete(autocompleteInstance);
@@ -95,7 +112,10 @@ export default function RegisterHospital() {
             phone: phone,
             latitude: location.lat,
             longitude: location.lng,
-            is_exposed: true 
+            is_exposed: true,
+            seeking_positions: seekingPositions,
+            offered_hourly_rate: offeredHourlyRate ? Number(offeredHourlyRate) : null,
+            employment_type: employmentType || null
           }
         ]);
 
@@ -207,6 +227,52 @@ export default function RegisterHospital() {
                 <input type="text" value={businessNumber} onChange={(e) => setBusinessNumber(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="000-00-00000" />
               </div>
             </div>
+
+            <hr className="border-gray-100" />
+
+            {/* 구인 정보 */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">구하는 인력 (복수 선택 가능)</label>
+                <div className="flex flex-wrap gap-2">
+                  {POSITION_OPTIONS.map(pos => (
+                    <button
+                      key={pos}
+                      type="button"
+                      onClick={() => togglePosition(pos)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+                        seekingPositions.includes(pos)
+                          ? 'bg-blue-100 text-blue-700 border-blue-300'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">제시 시급 (선택)</label>
+                  <div className="relative flex items-center">
+                    <input type="number" value={offeredHourlyRate} onChange={(e) => setOfferedHourlyRate(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl text-right pr-8" placeholder="예: 15000" />
+                    <span className="absolute right-4 text-gray-500 font-bold">원</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">고용 형태 (선택)</label>
+                  <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white">
+                    <option value="">선택</option>
+                    <option value="정규직">정규직</option>
+                    <option value="아르바이트">아르바이트</option>
+                    <option value="계약직">계약직</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-gray-100" />
 
             <div className="space-y-4">
               <div>
