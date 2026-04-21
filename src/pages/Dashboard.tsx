@@ -1,28 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogOut, Search, MessageCircle, Edit, Filter, X, Lock, MapPin } from 'lucide-react';
+import { LogOut, Search, MessageCircle, Edit, Filter, X, Lock, MapPin, Briefcase, Calendar, Infinity as InfinityIcon } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
+import type { JobPosting } from '../types/jobPosting';
+import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 37.5665, lng: 126.9780 };
 
-const WORKER_TYPES = [
-  "간호사", "간호조무사", "물리치료사", "방사선사", "보건교육사",
-  "수의사", "안경사", "약사", "언어재활사", "영양사",
-  "위생사", "의무기록사", "의사", "의지보조기기사", "임상병리사",
-  "작업치료사", "조산사", "치과기공사", "치과위생사", "치과의사",
-  "코디네이터", "한약사", "한의사", "응급구조사(1급)", "응급구조사(2급)"
-];
-const HOSPITAL_TYPES = [
-  { label: "동물병원", value: "animal" },
-  { label: "약국", value: "pharmacy" },
-  { label: "요양병원", value: "nursing" },
-  { label: "일반 의과", value: "medical" },
-  { label: "치과", value: "dental" },
-  { label: "한방", value: "oriental" },
-  { label: "기타", value: "other" }
-];
+const WORKER_TYPES = MEDICAL_LICENSE_TYPES;
 
 // ★ 1. 전화번호 마스킹 (010-****-5678)
 const maskPhoneNumber = (phone: string) => {
@@ -68,8 +56,9 @@ export default function Dashboard() {
   const [isExposed, setIsExposed] = useState(false);
   const [myLocation, setMyLocation] = useState(defaultCenter);
 
-  const [items, setItems] = useState<any[]>([]); 
+  const [items, setItems] = useState<any[]>([]);
   const [selectedPin, setSelectedPin] = useState<any>(null);
+  const [jobsByHospital, setJobsByHospital] = useState<Map<string, JobPosting[]>>(new Map());
 
   const [showFilter, setShowFilter] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -108,6 +97,19 @@ export default function Dashboard() {
           .select('*')
           .eq('role', 'hospital');
         setItems(hospitals || []);
+
+        // 의료인이 병원별 공고를 볼 수 있도록 active 공고 전체 fetch 후 그룹화
+        const { data: jobs } = await supabase
+          .from('job_postings')
+          .select('*')
+          .eq('status', 'active');
+        const grouped = new Map<string, JobPosting[]>();
+        (jobs ?? []).forEach((job: JobPosting) => {
+          const list = grouped.get(job.hospital_id) ?? [];
+          list.push(job);
+          grouped.set(job.hospital_id, list);
+        });
+        setJobsByHospital(grouped);
       }
 
     } catch (error) {
@@ -199,9 +201,14 @@ export default function Dashboard() {
 
         <div className="flex gap-2">
           {userRole === 'hospital' ? (
-            <button onClick={() => navigate('/hospital/edit')} className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold transition-colors text-sm md:text-base">
-              <Edit size={16} /> <span className="hidden md:inline">정보수정</span>
-            </button>
+            <>
+              <button onClick={() => navigate('/hospital/jobs')} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-colors text-sm md:text-base shadow-sm">
+                <Briefcase size={16} /> <span className="hidden md:inline">내 공고</span>
+              </button>
+              <button onClick={() => navigate('/hospital/edit')} className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold transition-colors text-sm md:text-base">
+                <Edit size={16} /> <span className="hidden md:inline">정보수정</span>
+              </button>
+            </>
           ) : (
              <button onClick={() => navigate('/worker/profile')} className="flex items-center gap-1 px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 font-bold transition-colors text-sm md:text-base">
                <Edit size={16} /> <span className="hidden md:inline">정보수정</span>
@@ -312,6 +319,12 @@ export default function Dashboard() {
                  <div className="text-sm text-gray-500 truncate mt-1">
                     {getDisplayAddress(item)}
                  </div>
+                 {userRole === 'worker' && (jobsByHospital.get(item.id)?.length ?? 0) > 0 && (
+                   <div className="mt-2 inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">
+                     <Briefcase size={11} />
+                     공고 {jobsByHospital.get(item.id)!.length}건
+                   </div>
+                 )}
                  {userRole === 'worker' && item.seeking_positions?.length > 0 && (
                    <div className="flex flex-wrap gap-1 mt-2">
                      {item.seeking_positions.map((pos: string) => (
@@ -359,12 +372,12 @@ export default function Dashboard() {
                   position={{ lat: selectedPin.latitude, lng: selectedPin.longitude }}
                   onCloseClick={() => setSelectedPin(null)}
                 >
-                  <div className="p-3 min-w-[240px]">
+                  <div className="p-3 min-w-[240px] max-w-[320px]">
                     <h3 className="font-bold text-lg text-gray-900">{selectedPin.name || selectedPin.hospital_name}</h3>
-                    
+
                     {/* 전화번호 마스킹 */}
                     <div className="flex items-center gap-1 text-gray-800 font-bold text-lg mb-1">
-                        📞 {maskPhoneNumber(selectedPin.phone)} 
+                        📞 {maskPhoneNumber(selectedPin.phone)}
                     </div>
                     <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
                         <Lock size={10} /> 개인정보 보호를 위해 번호가 가려집니다.
@@ -375,38 +388,95 @@ export default function Dashboard() {
                         <MapPin size={14} className="mt-0.5 shrink-0" />
                         <span>{getDisplayAddress(selectedPin)}</span>
                     </div>
-                    
-                    <div className="space-y-1 mb-4 text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                        {userRole === 'hospital' ? (
-                            <>
-                                <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
-                                <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
-                                <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
-                            </>
-                        ) : (
-                            <>
-                                <div><span className="font-bold text-gray-900">분류:</span> {HOSPITAL_TYPES.find(t => t.value === selectedPin.hospital_type)?.label || '기타'}</div>
-                                {selectedPin.seeking_positions?.length > 0 && (
-                                    <div><span className="font-bold text-gray-900">구인:</span> {selectedPin.seeking_positions.join(', ')}</div>
-                                )}
-                                {selectedPin.offered_hourly_rate && (
-                                    <div><span className="font-bold text-gray-900">제시 시급:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}원</div>
-                                )}
-                                {selectedPin.employment_type && (
-                                    <div><span className="font-bold text-gray-900">고용 형태:</span> {selectedPin.employment_type}</div>
-                                )}
-                            </>
-                        )}
-                    </div>
 
-                    <a 
+                    {userRole === 'hospital' ? (
+                        <div className="space-y-1 mb-4 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
+                            <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
+                            <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded mb-3">
+                                <span className="font-bold text-gray-900">분류:</span> {HOSPITAL_TYPES.find(t => t.value === selectedPin.hospital_type)?.label || '기타'}
+                            </div>
+
+                            {/* 병원이 올린 공고 목록 */}
+                            <div className="mb-3">
+                                <div className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1">
+                                    <Briefcase size={12} />
+                                    등록된 공고
+                                    {(jobsByHospital.get(selectedPin.id)?.length ?? 0) > 0 && (
+                                        <span>({jobsByHospital.get(selectedPin.id)!.length}건)</span>
+                                    )}
+                                </div>
+                                {(jobsByHospital.get(selectedPin.id)?.length ?? 0) === 0 ? (
+                                    <>
+                                        <div className="text-xs text-gray-400 py-2">현재 등록된 공고가 없습니다.</div>
+                                        {(selectedPin.seeking_positions?.length > 0 || selectedPin.offered_hourly_rate || selectedPin.employment_type) && (
+                                            <div className="space-y-1 text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
+                                                <div className="font-bold text-gray-700 text-[10px] mb-1">병원 프로필 기본 희망 조건</div>
+                                                {selectedPin.seeking_positions?.length > 0 && (
+                                                    <div><span className="font-bold">구인:</span> {selectedPin.seeking_positions.join(', ')}</div>
+                                                )}
+                                                {selectedPin.offered_hourly_rate && (
+                                                    <div><span className="font-bold">제시 시급:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}원</div>
+                                                )}
+                                                {selectedPin.employment_type && (
+                                                    <div><span className="font-bold">고용 형태:</span> {selectedPin.employment_type}</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                        {jobsByHospital.get(selectedPin.id)!.map((job) => (
+                                            <div key={job.id} className="bg-blue-50 border border-blue-100 rounded-lg p-2">
+                                                <div className="font-bold text-sm text-gray-900 mb-1 line-clamp-2">{job.title}</div>
+                                                <div className="text-[11px] text-gray-700 space-y-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <Briefcase size={10} className="text-blue-600 shrink-0" />
+                                                        <span>{formatJobCategory(job)}</span>
+                                                    </div>
+                                                    <div className="flex items-start gap-1">
+                                                        {job.schedule_type === 'always' ? (
+                                                            <InfinityIcon size={10} className="text-blue-600 shrink-0 mt-0.5" />
+                                                        ) : (
+                                                            <Calendar size={10} className="text-blue-600 shrink-0 mt-0.5" />
+                                                        )}
+                                                        <span>{formatSchedule(job)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="inline-flex w-[10px] justify-center text-blue-600 font-bold text-[11px]">₩</span>
+                                                        <span>{formatHourlyRate(job)}</span>
+                                                    </div>
+                                                </div>
+                                                {job.kakao_link && (
+                                                    <a
+                                                        href={job.kakao_link}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="mt-2 block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
+                                                    >
+                                                        💬 카카오톡 문의
+                                                    </a>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    <a
                       href={getSmsHref(selectedPin.phone)}
                       className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                     >
                       <MessageCircle size={18} />
                       문자 보내기
                     </a>
-                    
+
                     <p className="text-xs text-gray-400 text-center mt-2">
                         * 모바일 환경에서 문자를 보낼 수 있습니다.
                     </p>

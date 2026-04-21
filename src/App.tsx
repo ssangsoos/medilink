@@ -5,6 +5,8 @@ import RegisterHospital from './pages/RegisterHospital';
 import RegisterWorker from './pages/RegisterWorker';
 import Dashboard from './pages/Dashboard';
 import PostJob from './pages/PostJob';
+import MyJobs from './pages/MyJobs';
+import EditJob from './pages/EditJob';
 import EditProfile from './pages/EditProfile';
 import EditHospital from './pages/EditHospital'; // 새로 추가
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -20,8 +22,10 @@ function App() {
         <Route path="/register/worker" element={<RegisterWorker />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/hospital/post" element={<PostJob />} />
+        <Route path="/hospital/jobs" element={<MyJobs />} />
+        <Route path="/hospital/jobs/:id/edit" element={<EditJob />} />
         <Route path="/worker/profile" element={<EditProfile />} />
-        
+
         {/* 병원 정보 수정 경로 추가 */}
         <Route path="/hospital/edit" element={<EditHospital />} />
 
