@@ -16,6 +16,7 @@ export default function EditHospital() {
   const [hospitalType, setHospitalType] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
   const [phone, setPhone] = useState('');
+  const [mobilePhone, setMobilePhone] = useState('');
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
   const [seekingPositions, setSeekingPositions] = useState<string[]>([]);
@@ -52,6 +53,7 @@ export default function EditHospital() {
         setHospitalType(data.hospital_type || '');
         setBusinessNumber(data.business_number || '');
         setPhone(data.phone || '');
+        setMobilePhone(data.mobile_phone || '');
         setAddress(data.address || '');
         setDetailAddress(data.detail_address || '');
         setSeekingPositions(data.seeking_positions || []);
@@ -92,6 +94,7 @@ export default function EditHospital() {
         hospital_type: hospitalType,
         business_number: businessNumber,
         phone,
+        mobile_phone: mobilePhone || null,
         address,
         detail_address: detailAddress,
         seeking_positions: seekingPositions,
@@ -209,6 +212,13 @@ export default function EditHospital() {
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><Phone size={16}/> 연락처</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><Phone size={16}/> 휴대폰 번호 <span className="text-xs text-gray-500 font-normal">(선택, 문자 수신용)</span></label>
+              <input type="tel" value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="010-0000-0000" />
+              <p className="text-xs text-blue-600 mt-1 bg-blue-50 p-2 rounded">
+                💡 휴대폰을 입력하면 의료인이 <b>바로 문자</b>로 연락할 수 있어 매칭이 빠릅니다. 국선만 사용 시 비워두셔도 됩니다.
+              </p>
             </div>
           </div>
 

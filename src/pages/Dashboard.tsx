@@ -379,6 +379,12 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1 text-gray-800 font-bold text-lg mb-1">
                         📞 {maskPhoneNumber(selectedPin.phone)}
                     </div>
+                    {selectedPin.mobile_phone && (
+                      <div className="flex items-center gap-1 text-gray-700 text-sm mb-1">
+                          📱 {maskPhoneNumber(selectedPin.mobile_phone)}
+                          <span className="text-xs text-blue-600 font-bold ml-1">문자 수신</span>
+                      </div>
+                    )}
                     <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
                         <Lock size={10} /> 개인정보 보호를 위해 번호가 가려집니다.
                     </div>
@@ -469,16 +475,25 @@ export default function Dashboard() {
                         </>
                     )}
 
-                    <a
-                      href={getSmsHref(selectedPin.phone)}
-                      className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                    >
-                      <MessageCircle size={18} />
-                      문자 보내기
-                    </a>
+                    {userRole === 'worker' && !selectedPin.mobile_phone ? (
+                      <div className="block w-full py-3 px-4 rounded-xl bg-gray-100 text-gray-400 font-bold text-center flex items-center justify-center gap-2 border border-gray-200">
+                        <MessageCircle size={18} />
+                        문자 수신 번호 미등록
+                      </div>
+                    ) : (
+                      <a
+                        href={getSmsHref(userRole === 'worker' ? selectedPin.mobile_phone : selectedPin.phone)}
+                        className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                      >
+                        <MessageCircle size={18} />
+                        문자 보내기
+                      </a>
+                    )}
 
                     <p className="text-xs text-gray-400 text-center mt-2">
-                        * 모바일 환경에서 문자를 보낼 수 있습니다.
+                      {userRole === 'worker' && !selectedPin.mobile_phone
+                        ? '* 이 병원은 문자 수신 번호 미등록. 위 공고의 카카오톡 문의를 이용해주세요.'
+                        : '* 모바일 환경에서 문자를 보낼 수 있습니다.'}
                     </p>
                   </div>
                 </InfoWindow>

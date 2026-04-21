@@ -21,6 +21,7 @@ export default function RegisterHospital() {
   const [hospitalType, setHospitalType] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
   const [phone, setPhone] = useState('');
+  const [mobilePhone, setMobilePhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
@@ -110,6 +111,7 @@ export default function RegisterHospital() {
             address: address,
             detail_address: detailAddress,
             phone: phone,
+            mobile_phone: mobilePhone || null,
             latitude: location.lat,
             longitude: location.lng,
             is_exposed: true,
@@ -220,6 +222,14 @@ export default function RegisterHospital() {
                     <option value="other">기타</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">휴대폰 번호 <span className="text-xs text-gray-500 font-normal">(선택, 문자 수신용)</span></label>
+                <input type="tel" value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="010-0000-0000" />
+                <p className="text-xs text-blue-600 mt-1 bg-blue-50 p-2 rounded">
+                  💡 휴대폰을 입력하면 의료인이 <b>바로 문자</b>로 연락할 수 있어 매칭이 빠릅니다. 국선(02/032 등)만 쓰시는 경우 비워두셔도 됩니다.
+                </p>
               </div>
 
               <div>
