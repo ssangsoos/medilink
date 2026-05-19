@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info } from 'lucide-react';
+import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info, MapPin } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import PrivacyConsent from '../components/PrivacyConsent';
 import { MEDICAL_LICENSE_TYPES } from '../lib/medicalConstants';
+import { WORK_RADIUS_OPTIONS, optionToRadius } from '../lib/distance';
 
 export default function RegisterWorker() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function RegisterWorker() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreeAll, setAgreeAll] = useState(false);
+  const [workRadius, setWorkRadius] = useState<string>('5');
 
   const handleComplete = (data: any) => {
     let fullAddress = data.address;
@@ -84,6 +86,7 @@ export default function RegisterWorker() {
             phone: phone,
             latitude: lat,
             longitude: lng,
+            work_radius: optionToRadius(workRadius),
             is_exposed: true // 가입 시 기본 공개
           }
         ]);
@@ -174,10 +177,35 @@ export default function RegisterWorker() {
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">연락처</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium" placeholder="010-0000-0000" />
-              
+
               {/* ★ 추가된 안내 문구 */}
               <p className="text-xs text-blue-600 mt-2 flex items-center gap-1 bg-blue-50 p-2 rounded-lg">
                 <Info size={14} /> 이 번호는 채용 제안을 위해 병원 회원에게 공개됩니다.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
+                <MapPin size={16} className="text-purple-700" /> 출퇴근 가능 반경
+              </label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {WORK_RADIUS_OPTIONS.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    onClick={() => setWorkRadius(opt.value)}
+                    className={`px-2 py-3 rounded-xl border-2 font-bold text-xs transition-colors ${
+                      workRadius === opt.value
+                        ? 'border-purple-700 bg-purple-50 text-purple-800'
+                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1.5">
+                거주지에서 출퇴근 가능한 거리를 선택해주세요. 병원이 이 범위를 벗어나면 안내가 표시됩니다.
               </p>
             </div>
           </div>

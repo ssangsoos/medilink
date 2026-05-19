@@ -6,6 +6,7 @@ import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/ap
 import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
 import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
+import { haversineKm, jitterCoords, formatDistance } from '../lib/distance';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 37.5665, lng: 126.9780 };
@@ -59,6 +60,8 @@ export default function Dashboard() {
   const [items, setItems] = useState<any[]>([]);
   const [selectedPin, setSelectedPin] = useState<any>(null);
   const [jobsByHospital, setJobsByHospital] = useState<Map<string, JobPosting[]>>(new Map());
+  // selfLocation: 거리 계산 기준이 되는 "내 위치" (myLocation은 지도 중심이라 변동됨)
+  const [selfLocation, setSelfLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const [showFilter, setShowFilter] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
@@ -81,6 +84,7 @@ export default function Dashboard() {
 
         if (profile.latitude && profile.longitude) {
           setMyLocation({ lat: profile.latitude, lng: profile.longitude });
+          setSelfLocation({ lat: profile.latitude, lng: profile.longitude });
         }
       }
 
@@ -179,9 +183,41 @@ export default function Dashboard() {
     if (item.license_type) {
         return maskAddress(item.address);
     }
-    
+
     // 2) 그 외 (병원) -> 주소를 있는 그대로 다 보여줍니다.
     return item.address;
+  };
+
+  // 의료인 마커는 거주지 특정을 막기 위해 ID 기반 결정론적 노이즈를 적용
+  const getDisplayPosition = (item: any): { lat: number; lng: number } => {
+    if (!item?.latitude || !item?.longitude) return { lat: 0, lng: 0 };
+    if (item.license_type) {
+      const j = jitterCoords(item.id, item.latitude, item.longitude);
+      return { lat: j.lat, lng: j.lon };
+    }
+    return { lat: item.latitude, lng: item.longitude };
+  };
+
+  // 병원이 의료인을 봤을 때 거리(km). 그 외엔 null
+  const getDistanceKm = (item: any): number | null => {
+    if (!selfLocation) return null;
+    if (userRole !== 'hospital') return null;
+    if (!item?.latitude || !item?.longitude) return null;
+    return haversineKm(
+      selfLocation.lat,
+      selfLocation.lng,
+      item.latitude,
+      item.longitude,
+    );
+  };
+
+  const isOutOfRadius = (item: any): boolean => {
+    if (userRole !== 'hospital') return false;
+    if (!item?.license_type) return false;
+    if (item.work_radius == null) return false; // 제한 없음
+    const d = getDistanceKm(item);
+    if (d == null) return false;
+    return d > item.work_radius;
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
@@ -304,11 +340,12 @@ export default function Dashboard() {
           
           <div className="flex-1 overflow-y-auto p-4">
              {filteredItems.map(item => (
-               <div 
-                 key={item.id} 
+               <div
+                 key={item.id}
                  onClick={() => {
                    setSelectedPin(item);
-                   setMyLocation({ lat: item.latitude, lng: item.longitude });
+                   const pos = getDisplayPosition(item);
+                   setMyLocation({ lat: pos.lat, lng: pos.lng });
                  }}
                  className="p-4 bg-gray-50 hover:bg-blue-50 rounded-xl mb-3 cursor-pointer transition-colors border border-transparent hover:border-blue-200"
                >
@@ -363,21 +400,46 @@ export default function Dashboard() {
                 }}
               />
 
-              {filteredItems.map((item) => (
-                <Marker
-                  key={item.id}
-                  position={{ lat: item.latitude, lng: item.longitude }}
-                  onClick={() => setSelectedPin(item)}
-                />
-              ))}
+              {filteredItems.map((item) => {
+                const pos = getDisplayPosition(item);
+                const outOfRange = isOutOfRadius(item);
+                return (
+                  <Marker
+                    key={item.id}
+                    position={pos}
+                    icon={outOfRange ? { url: 'http://maps.google.com/mapfiles/ms/icons/grey.png' } : undefined}
+                    onClick={() => setSelectedPin(item)}
+                  />
+                );
+              })}
 
               {selectedPin && (
                 <InfoWindow
-                  position={{ lat: selectedPin.latitude, lng: selectedPin.longitude }}
+                  position={getDisplayPosition(selectedPin)}
                   onCloseClick={() => setSelectedPin(null)}
                 >
                   <div className="p-3 min-w-[240px] max-w-[320px]">
                     <h3 className="font-bold text-lg text-gray-900">{selectedPin.name || selectedPin.hospital_name}</h3>
+
+                    {(() => {
+                      const distKm = getDistanceKm(selectedPin);
+                      const outOfRange = isOutOfRadius(selectedPin);
+                      if (outOfRange && distKm != null) {
+                        return (
+                          <div className="mt-2 mb-2 bg-amber-50 border-l-4 border-amber-400 px-2 py-1.5 text-xs text-amber-900 rounded-r">
+                            ⚠️ 이 의료인의 출퇴근 반경({selectedPin.work_radius}km)을 벗어났습니다 · {formatDistance(distKm)}
+                          </div>
+                        );
+                      }
+                      if (userRole === 'hospital' && selectedPin.license_type && distKm != null) {
+                        return (
+                          <div className="text-xs text-gray-500 mb-1">
+                            대략 거리 · {formatDistance(distKm)}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
 
                     {/* 전화번호 마스킹 */}
                     <div className="flex items-center gap-1 text-gray-800 font-bold text-lg mb-1">

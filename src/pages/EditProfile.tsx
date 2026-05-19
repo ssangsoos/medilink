@@ -5,6 +5,7 @@ import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
+import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export default function EditProfile() {
         setLicenseType(data.license_type || '');
         setExperience(data.experience || '');
         setDesiredHourlyRate(data.desired_hourly_rate || '');
-        setWorkRadius(data.work_radius ? String(data.work_radius) : '5');
+        setWorkRadius(radiusToOption(data.work_radius));
         setPhone(data.phone || '');
         setAddress(data.address || '');
         setDetailAddress(data.detail_address || '');
@@ -75,7 +76,7 @@ export default function EditProfile() {
         license_type: licenseType,
         experience,
         desired_hourly_rate: Number(desiredHourlyRate),
-        work_radius: Number(workRadius),
+        work_radius: optionToRadius(workRadius),
         phone,
         address,
         detail_address: detailAddress
@@ -230,11 +231,9 @@ export default function EditProfile() {
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><MapPin size={16} /> 근무 희망 반경</label>
               <select value={workRadius} onChange={(e) => setWorkRadius(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-purple-900">
-                <option value="1">1km 이내</option>
-                <option value="3">3km 이내</option>
-                <option value="5">5km 이내</option>
-                <option value="10">10km 이내</option>
-                <option value="20">20km 이내</option>
+                {WORK_RADIUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
           </div>
