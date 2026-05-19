@@ -7,7 +7,13 @@ import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
 import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 import { haversineKm, jitterCoords, formatDistance } from '../lib/distance';
-import { formatAvailableFrom } from '../lib/profileFields';
+import {
+  formatAvailableFrom,
+  formatFromOptions,
+  WORK_PATTERN_OPTIONS,
+  AVAILABLE_DAYS_OPTIONS,
+  AVAILABLE_TIMES_OPTIONS,
+} from '../lib/profileFields';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 37.5665, lng: 126.9780 };
@@ -469,7 +475,7 @@ export default function Dashboard() {
                                     "{selectedPin.bio}"
                                 </div>
                             )}
-                            <div className="space-y-1 mb-4 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            <div className="space-y-1 mb-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
                                 <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
                                 <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
                                 <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
@@ -477,6 +483,19 @@ export default function Dashboard() {
                                     <div><span className="font-bold text-gray-900">즉시 가능:</span> {formatAvailableFrom(selectedPin.available_from)}</div>
                                 )}
                             </div>
+                            {(selectedPin.work_pattern?.length || selectedPin.available_days?.length || selectedPin.available_times?.length) ? (
+                                <div className="space-y-1 mb-4 text-xs text-gray-700 bg-purple-50/60 border border-purple-100 p-2 rounded">
+                                    {selectedPin.work_pattern?.length > 0 && (
+                                        <div><span className="font-bold text-purple-900">근무 형태:</span> {formatFromOptions(selectedPin.work_pattern, WORK_PATTERN_OPTIONS)}</div>
+                                    )}
+                                    {selectedPin.available_days?.length > 0 && (
+                                        <div><span className="font-bold text-purple-900">가능 요일:</span> {formatFromOptions(selectedPin.available_days, AVAILABLE_DAYS_OPTIONS)}</div>
+                                    )}
+                                    {selectedPin.available_times?.length > 0 && (
+                                        <div><span className="font-bold text-purple-900">시간대:</span> {formatFromOptions(selectedPin.available_times, AVAILABLE_TIMES_OPTIONS)}</div>
+                                    )}
+                                </div>
+                            ) : null}
                         </>
                     ) : (
                         <>

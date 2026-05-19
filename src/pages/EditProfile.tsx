@@ -3,10 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles, Calendar, Sun } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
-import { AVAILABLE_FROM_OPTIONS, BIO_MAX_LENGTH } from '../lib/profileFields';
+import {
+  AVAILABLE_FROM_OPTIONS,
+  BIO_MAX_LENGTH,
+  WORK_PATTERN_OPTIONS,
+  AVAILABLE_DAYS_OPTIONS,
+  AVAILABLE_TIMES_OPTIONS,
+  toggleValue,
+} from '../lib/profileFields';
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -24,6 +31,9 @@ export default function EditProfile() {
   const [detailAddress, setDetailAddress] = useState('');
   const [availableFrom, setAvailableFrom] = useState<string>('flexible');
   const [bio, setBio] = useState<string>('');
+  const [workPattern, setWorkPattern] = useState<string[]>([]);
+  const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -47,6 +57,9 @@ export default function EditProfile() {
         setDetailAddress(data.detail_address || '');
         setAvailableFrom(data.available_from || 'flexible');
         setBio(data.bio || '');
+        setWorkPattern(Array.isArray(data.work_pattern) ? data.work_pattern : []);
+        setAvailableDays(Array.isArray(data.available_days) ? data.available_days : []);
+        setAvailableTimes(Array.isArray(data.available_times) ? data.available_times : []);
       }
       setInitialLoading(false);
     };
@@ -84,6 +97,9 @@ export default function EditProfile() {
         work_radius: optionToRadius(workRadius),
         available_from: availableFrom,
         bio: bio.trim() || null,
+        work_pattern: workPattern.length > 0 ? workPattern : null,
+        available_days: availableDays.length > 0 ? availableDays : null,
+        available_times: availableTimes.length > 0 ? availableTimes : null,
         phone,
         address,
         detail_address: detailAddress
@@ -246,7 +262,7 @@ export default function EditProfile() {
 
           <div>
             <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
-              <Sparkles size={16} className="text-purple-700" /> 한 줄 소개 <span className="text-xs font-normal text-gray-500">(선택)</span>
+              <Sparkles size={16} className="text-purple-700" /> 한 줄 소개
             </label>
             <input
               type="text"
@@ -257,8 +273,76 @@ export default function EditProfile() {
               placeholder="예) 임플란트 어시스트 자신 있어요"
             />
             <div className="flex justify-between mt-1">
-              <p className="text-xs text-gray-500">병원이 프로필 볼 때 함께 표시됩니다.</p>
+              <p className="text-xs text-purple-700 font-medium">한 줄로 본인을 잘 요약하면 채용 제안이 훨씬 많이 옵니다.</p>
               <p className="text-xs text-gray-400">{bio.length}/{BIO_MAX_LENGTH}</p>
+            </div>
+          </div>
+
+          <div className="bg-purple-50/60 border border-purple-100 rounded-xl p-4 space-y-3">
+            <p className="text-xs text-purple-800 font-medium flex items-center gap-1">
+              <Calendar size={14} /> 가능 일정 (해당하는 항목 모두 선택)
+            </p>
+
+            <div>
+              <p className="text-xs font-bold text-gray-700 mb-1.5">근무 형태</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {WORK_PATTERN_OPTIONS.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    onClick={() => setWorkPattern((prev) => toggleValue(prev, opt.value))}
+                    className={`px-2 py-2 rounded-lg border-2 font-bold text-xs transition-colors ${
+                      workPattern.includes(opt.value)
+                        ? 'border-purple-700 bg-purple-100 text-purple-800'
+                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-gray-700 mb-1.5">가능 요일</p>
+              <div className="grid grid-cols-7 gap-1">
+                {AVAILABLE_DAYS_OPTIONS.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    onClick={() => setAvailableDays((prev) => toggleValue(prev, opt.value))}
+                    className={`py-2 rounded-lg border-2 font-bold text-xs transition-colors ${
+                      availableDays.includes(opt.value)
+                        ? 'border-purple-700 bg-purple-100 text-purple-800'
+                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1">
+                <Sun size={12} /> 가능 시간대
+              </p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {AVAILABLE_TIMES_OPTIONS.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    onClick={() => setAvailableTimes((prev) => toggleValue(prev, opt.value))}
+                    className={`px-2 py-2 rounded-lg border-2 font-bold text-xs transition-colors ${
+                      availableTimes.includes(opt.value)
+                        ? 'border-purple-700 bg-purple-100 text-purple-800'
+                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
