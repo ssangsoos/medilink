@@ -98,11 +98,15 @@ export default function Dashboard() {
           .eq('role', 'hospital');
         setItems(hospitals || []);
 
-        // 의료인이 병원별 공고를 볼 수 있도록 active 공고 전체 fetch 후 그룹화
+        // 의료인이 병원별 공고를 볼 수 있도록 active + 미만료 공고 fetch 후 그룹화
+        // - 항시 구인(work_end_date IS NULL)이거나
+        // - 근무 종료일이 오늘 이후인 공고만 노출
+        const today = new Date().toISOString().slice(0, 10);
         const { data: jobs } = await supabase
           .from('job_postings')
           .select('*')
-          .eq('status', 'active');
+          .eq('status', 'active')
+          .or(`work_end_date.is.null,work_end_date.gte.${today}`);
         const grouped = new Map<string, JobPosting[]>();
         (jobs ?? []).forEach((job: JobPosting) => {
           const list = grouped.get(job.hospital_id) ?? [];
@@ -435,8 +439,10 @@ export default function Dashboard() {
                                         )}
                                     </>
                                 ) : (
-                                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                                        {jobsByHospital.get(selectedPin.id)!.map((job) => (
+                                    <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                                        {jobsByHospital.get(selectedPin.id)!.map((job) => {
+                                            const jobSmsPhone = job.contact_phone || selectedPin.mobile_phone || '';
+                                            return (
                                             <div key={job.id} className="bg-blue-50 border border-blue-100 rounded-lg p-2">
                                                 <div className="font-bold text-sm text-gray-900 mb-1 line-clamp-2">{job.title}</div>
                                                 <div className="text-[11px] text-gray-700 space-y-0.5">
@@ -457,18 +463,36 @@ export default function Dashboard() {
                                                         <span>{formatHourlyRate(job)}</span>
                                                     </div>
                                                 </div>
-                                                {job.kakao_link && (
-                                                    <a
-                                                        href={job.kakao_link}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="mt-2 block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
-                                                    >
-                                                        💬 카카오톡 문의
-                                                    </a>
-                                                )}
+                                                <div className="mt-2 grid grid-cols-1 gap-1.5">
+                                                    {jobSmsPhone ? (
+                                                        <a
+                                                            href={getSmsHref(jobSmsPhone)}
+                                                            className="block text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                                                        >
+                                                            <MessageCircle size={12} /> 문자 보내기
+                                                            {job.contact_phone && (
+                                                                <span className="text-[10px] font-normal opacity-80">(공고 전용)</span>
+                                                            )}
+                                                        </a>
+                                                    ) : (
+                                                        <div className="block text-center bg-gray-100 text-gray-400 text-xs font-bold py-1.5 rounded border border-gray-200">
+                                                            문자 수신 번호 미등록
+                                                        </div>
+                                                    )}
+                                                    {job.kakao_link && (
+                                                        <a
+                                                            href={job.kakao_link}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
+                                                        >
+                                                            💬 카카오톡 문의
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

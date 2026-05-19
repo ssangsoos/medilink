@@ -14,7 +14,8 @@ export interface JobPosting {
   work_end_time: string | null;
   hourly_rate: number | null;
   wage_negotiable: boolean;
-  kakao_link: string;
+  kakao_link: string | null;
+  contact_phone: string | null;
   status: "active" | "closed" | "paused";
   latitude: number | null;
   longitude: number | null;

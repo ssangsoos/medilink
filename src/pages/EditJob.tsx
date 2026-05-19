@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MessageCircle, Calendar, Infinity as InfinityIcon, Briefcase, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Calendar, Infinity as InfinityIcon, Briefcase, AlertCircle, Phone } from 'lucide-react';
 import { MEDICAL_LICENSE_TYPES, JOB_CATEGORY_OTHER } from '../lib/medicalConstants';
 import type { JobPosting, ScheduleType } from '../types/jobPosting';
 
@@ -27,6 +27,9 @@ export default function EditJob() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [kakaoLink, setKakaoLink] = useState('');
+  const [phoneMode, setPhoneMode] = useState<'default' | 'custom'>('default');
+  const [customPhone, setCustomPhone] = useState('');
+  const [hospitalMobile, setHospitalMobile] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -42,18 +45,29 @@ export default function EditJob() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('job_postings')
-        .select('*')
-        .eq('id', id)
-        .eq('hospital_id', user.id)
-        .single();
+      const [jobResult, profileResult] = await Promise.all([
+        supabase
+          .from('job_postings')
+          .select('*')
+          .eq('id', id)
+          .eq('hospital_id', user.id)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('mobile_phone')
+          .eq('id', user.id)
+          .single(),
+      ]);
 
+      const { data, error } = jobResult;
       if (error || !data) {
         setNotFound(true);
         setFetching(false);
         return;
       }
+
+      const profileMobile = profileResult.data?.mobile_phone ?? '';
+      setHospitalMobile(profileMobile);
 
       const job = data as JobPosting;
       setTitle(job.title ?? '');
@@ -68,6 +82,14 @@ export default function EditJob() {
       setStartTime(job.work_start_time ?? '');
       setEndTime(job.work_end_time ?? '');
       setKakaoLink(job.kakao_link ?? '');
+      if (job.contact_phone) {
+        setPhoneMode('custom');
+        setCustomPhone(job.contact_phone);
+      } else if (!profileMobile) {
+        setPhoneMode('custom');
+      } else {
+        setPhoneMode('default');
+      }
       setFetching(false);
     };
 
@@ -95,7 +117,20 @@ export default function EditJob() {
         return '시급을 입력하거나 "시급 협의 가능"을 선택해주세요.';
       }
     }
+    if (phoneMode === 'custom' && !customPhone.trim()) {
+      return '연락받을 새 전화번호를 입력해주세요.';
+    }
     return null;
+  };
+
+  const resolveContactPhone = (): string | null => {
+    if (phoneMode === 'default') return null;
+    return customPhone.trim() || null;
+  };
+
+  const normalizeKakao = (link: string): string | null => {
+    const trimmed = link.trim();
+    return trimmed === '' ? null : trimmed;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,7 +159,8 @@ export default function EditJob() {
         work_end_date: scheduleType === 'specific' ? endDate : null,
         work_start_time: scheduleType === 'specific' ? startTime : null,
         work_end_time: scheduleType === 'specific' ? endTime : null,
-        kakao_link: kakaoLink,
+        kakao_link: normalizeKakao(kakaoLink),
+        contact_phone: resolveContactPhone(),
       };
 
       const { error } = await supabase
@@ -313,19 +349,65 @@ export default function EditJob() {
             />
           </div>
 
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+            <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
+              <Phone size={16} className="text-blue-600" /> 지원자가 문자로 연락받을 번호
+            </label>
+            <div className="space-y-2">
+              <label className={`flex items-start gap-2 p-3 bg-white rounded-lg border cursor-pointer ${phoneMode === 'default' ? 'border-blue-500' : 'border-gray-200'} ${!hospitalMobile ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <input
+                  type="radio"
+                  name="phone-mode"
+                  checked={phoneMode === 'default'}
+                  disabled={!hospitalMobile}
+                  onChange={() => setPhoneMode('default')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-gray-900">병원에 등록된 휴대폰 사용</div>
+                  <div className="text-xs text-gray-600 mt-0.5">
+                    {hospitalMobile
+                      ? hospitalMobile
+                      : '병원 정보에 휴대폰이 등록되어 있지 않습니다. 정보수정 화면에서 등록하거나 아래에 직접 입력해주세요.'}
+                  </div>
+                </div>
+              </label>
+              <label className={`flex items-start gap-2 p-3 bg-white rounded-lg border cursor-pointer ${phoneMode === 'custom' ? 'border-blue-500' : 'border-gray-200'}`}>
+                <input
+                  type="radio"
+                  name="phone-mode"
+                  checked={phoneMode === 'custom'}
+                  onChange={() => setPhoneMode('custom')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-gray-900">이 공고만 다른 번호 사용</div>
+                  <input
+                    type="tel"
+                    value={customPhone}
+                    onChange={(e) => setCustomPhone(e.target.value)}
+                    onFocus={() => setPhoneMode('custom')}
+                    placeholder="010-0000-0000"
+                    className="mt-2 w-full p-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
             <label htmlFor="edit-job-kakao" className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
-              <MessageCircle size={16} className="text-yellow-600" /> 카카오톡 오픈채팅방 링크
+              <MessageCircle size={16} className="text-yellow-600" /> 카카오톡 오픈채팅방 링크 <span className="text-xs font-normal text-gray-500">(선택)</span>
             </label>
             <input
               id="edit-job-kakao"
               type="url"
-              required
               value={kakaoLink}
               onChange={(e) => setKakaoLink(e.target.value)}
               className="w-full p-3 border border-yellow-300 rounded-xl bg-white"
               placeholder="https://open.kakao.com/o/..."
             />
+            <p className="text-xs text-gray-500 mt-1">비워두면 문자 보내기만 노출됩니다.</p>
           </div>
 
           <button
