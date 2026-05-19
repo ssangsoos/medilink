@@ -7,6 +7,7 @@ import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
 import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 import { haversineKm, jitterCoords, formatDistance } from '../lib/distance';
+import { formatAvailableFrom } from '../lib/profileFields';
 
 const containerStyle = { width: '100%', height: '100%' };
 const defaultCenter = { lat: 37.5665, lng: 126.9780 };
@@ -462,11 +463,21 @@ export default function Dashboard() {
                     </div>
 
                     {userRole === 'hospital' ? (
-                        <div className="space-y-1 mb-4 text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                            <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
-                            <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
-                            <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
-                        </div>
+                        <>
+                            {selectedPin.bio && (
+                                <div className="mb-2 px-3 py-2 bg-purple-50 border-l-4 border-purple-400 text-sm text-purple-900 italic rounded-r">
+                                    "{selectedPin.bio}"
+                                </div>
+                            )}
+                            <div className="space-y-1 mb-4 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                                <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
+                                <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
+                                <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
+                                {selectedPin.available_from && (
+                                    <div><span className="font-bold text-gray-900">즉시 가능:</span> {formatAvailableFrom(selectedPin.available_from)}</div>
+                                )}
+                            </div>
+                        </>
                     ) : (
                         <>
                             <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded mb-3">

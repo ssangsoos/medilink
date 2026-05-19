@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info, MapPin } from 'lucide-react';
+import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info, MapPin, Clock, Sparkles } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import PrivacyConsent from '../components/PrivacyConsent';
 import { MEDICAL_LICENSE_TYPES } from '../lib/medicalConstants';
 import { WORK_RADIUS_OPTIONS, optionToRadius } from '../lib/distance';
+import { AVAILABLE_FROM_OPTIONS, BIO_MAX_LENGTH } from '../lib/profileFields';
 
 export default function RegisterWorker() {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ export default function RegisterWorker() {
   const [password, setPassword] = useState('');
   const [agreeAll, setAgreeAll] = useState(false);
   const [workRadius, setWorkRadius] = useState<string>('5');
+  const [availableFrom, setAvailableFrom] = useState<string>('flexible');
+  const [bio, setBio] = useState<string>('');
 
   const handleComplete = (data: any) => {
     let fullAddress = data.address;
@@ -87,6 +90,8 @@ export default function RegisterWorker() {
             latitude: lat,
             longitude: lng,
             work_radius: optionToRadius(workRadius),
+            available_from: availableFrom,
+            bio: bio.trim() || null,
             is_exposed: true // 가입 시 기본 공개
           }
         ]);
@@ -207,6 +212,46 @@ export default function RegisterWorker() {
               <p className="text-xs text-gray-500 mt-1.5">
                 거주지에서 출퇴근 가능한 거리를 선택해주세요. 병원이 이 범위를 벗어나면 안내가 표시됩니다.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
+                <Clock size={16} className="text-purple-700" /> 즉시 근무 가능 시점
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {AVAILABLE_FROM_OPTIONS.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    onClick={() => setAvailableFrom(opt.value)}
+                    className={`px-2 py-3 rounded-xl border-2 font-bold text-xs transition-colors ${
+                      availableFrom === opt.value
+                        ? 'border-purple-700 bg-purple-50 text-purple-800'
+                        : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
+                <Sparkles size={16} className="text-purple-700" /> 한 줄 소개 <span className="text-xs font-normal text-gray-500">(선택)</span>
+              </label>
+              <input
+                type="text"
+                value={bio}
+                onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX_LENGTH))}
+                maxLength={BIO_MAX_LENGTH}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-900 outline-none text-black font-medium"
+                placeholder="예) 임플란트 어시스트 자신 있어요"
+              />
+              <div className="flex justify-between mt-1">
+                <p className="text-xs text-gray-500">병원이 프로필 볼 때 함께 표시됩니다.</p>
+                <p className="text-xs text-gray-400">{bio.length}/{BIO_MAX_LENGTH}</p>
+              </div>
             </div>
           </div>
 

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
+import { AVAILABLE_FROM_OPTIONS, BIO_MAX_LENGTH } from '../lib/profileFields';
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function EditProfile() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
+  const [availableFrom, setAvailableFrom] = useState<string>('flexible');
+  const [bio, setBio] = useState<string>('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,6 +45,8 @@ export default function EditProfile() {
         setPhone(data.phone || '');
         setAddress(data.address || '');
         setDetailAddress(data.detail_address || '');
+        setAvailableFrom(data.available_from || 'flexible');
+        setBio(data.bio || '');
       }
       setInitialLoading(false);
     };
@@ -77,6 +82,8 @@ export default function EditProfile() {
         experience,
         desired_hourly_rate: Number(desiredHourlyRate),
         work_radius: optionToRadius(workRadius),
+        available_from: availableFrom,
+        bio: bio.trim() || null,
         phone,
         address,
         detail_address: detailAddress
@@ -214,6 +221,46 @@ export default function EditProfile() {
           </div>
 
           <hr className="border-gray-100" />
+
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
+              <Clock size={16} className="text-purple-700" /> 즉시 근무 가능 시점
+            </label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {AVAILABLE_FROM_OPTIONS.map((opt) => (
+                <button
+                  type="button"
+                  key={opt.value}
+                  onClick={() => setAvailableFrom(opt.value)}
+                  className={`px-2 py-3 rounded-xl border-2 font-bold text-xs transition-colors ${
+                    availableFrom === opt.value
+                      ? 'border-purple-700 bg-purple-50 text-purple-800'
+                      : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
+              <Sparkles size={16} className="text-purple-700" /> 한 줄 소개 <span className="text-xs font-normal text-gray-500">(선택)</span>
+            </label>
+            <input
+              type="text"
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX_LENGTH))}
+              maxLength={BIO_MAX_LENGTH}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-900"
+              placeholder="예) 임플란트 어시스트 자신 있어요"
+            />
+            <div className="flex justify-between mt-1">
+              <p className="text-xs text-gray-500">병원이 프로필 볼 때 함께 표시됩니다.</p>
+              <p className="text-xs text-gray-400">{bio.length}/{BIO_MAX_LENGTH}</p>
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><FileText size={16} /> 경력 및 자기소개</label>
