@@ -51,6 +51,9 @@ export default function RegisterWorker() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
       });
 
       if (authError) throw authError;
@@ -85,9 +88,26 @@ export default function RegisterWorker() {
           }
         ]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile insert failed for', authData.user.id, profileError);
+        await supabase.auth.signOut();
+        alert(
+          '프로필 등록 중 오류가 발생했습니다.\n' +
+          '잠시 후 다시 시도해주시거나, 문제가 지속되면 고객센터로 문의해주세요.\n\n' +
+          `오류: ${profileError.message}`
+        );
+        return;
+      }
 
-      alert("가입이 완료되었습니다! 로그인 해주세요.");
+      if (authData.session) {
+        alert('가입이 완료되었습니다. 로그인 페이지에서 로그인해주세요.');
+      } else {
+        alert(
+          `가입 신청이 완료되었습니다.\n\n` +
+          `${email} 주소로 인증 메일이 발송되었습니다.\n` +
+          `메일함(스팸함 포함)을 확인하시고 인증 링크를 클릭하셔야 로그인이 가능합니다.`
+        );
+      }
       navigate('/login');
 
     } catch (error: any) {

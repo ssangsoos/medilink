@@ -25,7 +25,16 @@ export default function Login() {
       navigate('/dashboard');
 
     } catch (error: any) {
-      alert('로그인 실패: ' + error.message);
+      const msg = String(error?.message ?? '');
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        alert(
+          '이메일 인증이 완료되지 않았습니다.\n\n' +
+          '가입 시 받으신 인증 메일의 링크를 클릭하신 뒤 다시 로그인해주세요.\n' +
+          '메일이 보이지 않으면 스팸함도 확인해주세요.'
+        );
+      } else {
+        alert('로그인 실패: ' + msg);
+      }
     } finally {
       setLoading(false);
     }
