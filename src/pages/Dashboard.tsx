@@ -477,7 +477,7 @@ export default function Dashboard() {
                             )}
                             <div className="space-y-1 mb-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
                                 <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
-                                <div><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
+                                <div className="whitespace-pre-line"><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
                                 <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
                                 {selectedPin.available_from && (
                                     <div><span className="font-bold text-gray-900">즉시 가능:</span> {formatAvailableFrom(selectedPin.available_from)}</div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles, Calendar, Sun } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles, Calendar, Sun, Plus, X } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
 import {
@@ -13,7 +13,16 @@ import {
   AVAILABLE_DAYS_OPTIONS,
   AVAILABLE_TIMES_OPTIONS,
   toggleValue,
+  type CareerRow,
+  CAREER_END_ONGOING,
+  getCareerYearOptions,
+  emptyCareerRow,
+  serializeExperience,
+  parseExperience,
+  padCareerRows,
 } from '../lib/profileFields';
+
+const CAREER_YEAR_OPTIONS = getCareerYearOptions();
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -23,7 +32,8 @@ export default function EditProfile() {
 
   const [name, setName] = useState('');
   const [licenseType, setLicenseType] = useState('');
-  const [experience, setExperience] = useState('');
+  const [careerRows, setCareerRows] = useState<CareerRow[]>(padCareerRows([]));
+  const [experienceNotes, setExperienceNotes] = useState('');
   const [desiredHourlyRate, setDesiredHourlyRate] = useState('');
   const [workRadius, setWorkRadius] = useState('5');
   const [phone, setPhone] = useState('');
@@ -49,7 +59,9 @@ export default function EditProfile() {
       if (data) {
         setName(data.name || '');
         setLicenseType(data.license_type || '');
-        setExperience(data.experience || '');
+        const parsed = parseExperience(data.experience);
+        setCareerRows(padCareerRows(parsed.rows));
+        setExperienceNotes(parsed.notes);
         setDesiredHourlyRate(data.desired_hourly_rate || '');
         setWorkRadius(radiusToOption(data.work_radius));
         setPhone(data.phone || '');
@@ -81,6 +93,21 @@ export default function EditProfile() {
     open({ onComplete: handleAddressComplete });
   };
 
+  const updateCareerRow = (index: number, field: keyof CareerRow, value: string) => {
+    setCareerRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  };
+
+  const addCareerRow = () => {
+    setCareerRows((prev) => [...prev, emptyCareerRow()]);
+  };
+
+  const removeCareerRow = (index: number) => {
+    setCareerRows((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length === 0 ? [emptyCareerRow()] : next;
+    });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -92,7 +119,7 @@ export default function EditProfile() {
       let updates: any = {
         name,
         license_type: licenseType,
-        experience,
+        experience: serializeExperience(careerRows, experienceNotes),
         desired_hourly_rate: Number(desiredHourlyRate),
         work_radius: optionToRadius(workRadius),
         available_from: availableFrom,
@@ -347,8 +374,63 @@ export default function EditProfile() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><FileText size={16} /> 경력 및 자기소개</label>
-            <textarea rows={5} value={experience} onChange={(e) => setExperience(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-900" />
+            <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><FileText size={16} /> 경력</label>
+            <p className="text-xs text-purple-700 font-medium mb-2">근무 기간과 병원 이름을 한 줄씩 입력해 주세요.</p>
+            <div className="space-y-2">
+              {careerRows.map((row, index) => (
+                <div key={index} className="flex items-center gap-1.5">
+                  <select
+                    value={row.startYear}
+                    onChange={(e) => updateCareerRow(index, 'startYear', e.target.value)}
+                    className="w-24 px-2 py-3 border border-gray-300 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-purple-900"
+                  >
+                    <option value="">시작</option>
+                    {CAREER_YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-400 font-bold shrink-0">~</span>
+                  <select
+                    value={row.endYear}
+                    onChange={(e) => updateCareerRow(index, 'endYear', e.target.value)}
+                    className="w-24 px-2 py-3 border border-gray-300 rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-purple-900"
+                  >
+                    <option value="">종료</option>
+                    <option value={CAREER_END_ONGOING}>{CAREER_END_ONGOING}</option>
+                    {CAREER_YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={row.hospital}
+                    onChange={(e) => updateCareerRow(index, 'hospital', e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-900"
+                    placeholder="병원 이름"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCareerRow(index)}
+                    className="p-2 text-gray-400 hover:text-red-500 shrink-0"
+                    aria-label="경력 행 삭제"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addCareerRow}
+              className="mt-2 w-full py-2.5 border-2 border-dashed border-purple-200 rounded-xl text-purple-700 font-bold text-sm flex items-center justify-center gap-1 hover:bg-purple-50 transition-colors"
+            >
+              <Plus size={16} /> 경력 행 추가
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><FileText size={16} /> 기타 사항 및 자기소개</label>
+            <textarea rows={5} value={experienceNotes} onChange={(e) => setExperienceNotes(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-900" placeholder="담당 업무, 보유 술기, 자기소개 등을 자유롭게 적어주세요." />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
