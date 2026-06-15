@@ -183,6 +183,23 @@ export default function Dashboard() {
     return `sms:${phone}?body=${encodeURIComponent(message)}`;
   };
 
+  // 병원이 "이 공고만 다른 번호 사용"으로 등록한 경우, 대표 표시·메인 문자 버튼도
+  // 등록 번호가 아닌 공고 전용 번호를 쓰도록 보정한다.
+  // 공고들의 전용 번호가 하나로 통일돼 있으면 그 번호를, 그렇지 않으면(여러 번호가
+  // 섞여 있거나 전용 번호가 없으면) 병원 등록 번호로 폴백한다. 공고별 버튼은 각자
+  // 자기 번호를 그대로 쓰므로 여러 번호가 섞인 경우에도 손실이 없다.
+  const getEffectiveMobile = (pin: any): string => {
+    const fallback = pin?.mobile_phone ?? '';
+    const jobs = jobsByHospital.get(pin?.id) ?? [];
+    if (jobs.length === 0) return fallback;
+    // 모든 공고가 동일한 전용 번호 하나로 통일된 경우에만 대표 번호를 덮어쓴다.
+    // 전용/등록 번호가 섞여 있으면 등록 번호로 폴백 (공고별 버튼이 각자 처리).
+    const allCustom = jobs.every((j) => !!j.contact_phone);
+    const distinct = Array.from(new Set(jobs.map((j) => j.contact_phone)));
+    if (allCustom && distinct.length === 1 && distinct[0]) return distinct[0];
+    return fallback;
+  };
+
   // ★ 3. 화면 표시용 주소 결정 함수 (가장 중요!)
   const getDisplayAddress = (item: any) => {
     // 1) 아이템이 'license_type'을 가지고 있다? -> 의료인(개인)입니다.
@@ -452,9 +469,9 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1 text-gray-800 font-bold text-lg mb-1">
                         📞 {maskPhoneNumber(selectedPin.phone)}
                     </div>
-                    {selectedPin.mobile_phone && (
+                    {getEffectiveMobile(selectedPin) && (
                       <div className="flex items-center gap-1 text-gray-700 text-sm mb-1">
-                          📱 {maskPhoneNumber(selectedPin.mobile_phone)}
+                          📱 {maskPhoneNumber(getEffectiveMobile(selectedPin))}
                           <span className="text-xs text-blue-600 font-bold ml-1">문자 수신</span>
                       </div>
                     )}
@@ -591,14 +608,14 @@ export default function Dashboard() {
                         </>
                     )}
 
-                    {userRole === 'worker' && !selectedPin.mobile_phone ? (
+                    {userRole === 'worker' && !getEffectiveMobile(selectedPin) ? (
                       <div className="block w-full py-3 px-4 rounded-xl bg-gray-100 text-gray-400 font-bold text-center flex items-center justify-center gap-2 border border-gray-200">
                         <MessageCircle size={18} />
                         문자 수신 번호 미등록
                       </div>
                     ) : (
                       <a
-                        href={getSmsHref(userRole === 'worker' ? selectedPin.mobile_phone : selectedPin.phone)}
+                        href={getSmsHref(userRole === 'worker' ? getEffectiveMobile(selectedPin) : selectedPin.phone)}
                         className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
                         <MessageCircle size={18} />
@@ -607,7 +624,7 @@ export default function Dashboard() {
                     )}
 
                     <p className="text-xs text-gray-400 text-center mt-2">
-                      {userRole === 'worker' && !selectedPin.mobile_phone
+                      {userRole === 'worker' && !getEffectiveMobile(selectedPin)
                         ? '* 이 병원은 문자 수신 번호 미등록. 위 공고의 카카오톡 문의를 이용해주세요.'
                         : '* 모바일 환경에서 문자를 보낼 수 있습니다.'}
                     </p>
