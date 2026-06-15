@@ -20,6 +20,16 @@ const defaultCenter = { lat: 37.5665, lng: 126.9780 };
 
 const WORKER_TYPES = MEDICAL_LICENSE_TYPES;
 
+// 출퇴근 가능 거리 밖 인재 마커 — 보라색 핀 (회색 대비 가독성 개선)
+const OUT_OF_RANGE_MARKER_ICON =
+  'data:image/svg+xml;charset=UTF-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="27" height="43" viewBox="0 0 27 43">' +
+      '<path d="M13.5 0C6.04 0 0 6.04 0 13.5c0 9.45 13.5 29.5 13.5 29.5S27 22.95 27 13.5C27 6.04 20.96 0 13.5 0z" fill="#A855F7" stroke="#7E22CE" stroke-width="1.5"/>' +
+      '<circle cx="13.5" cy="13.5" r="5" fill="#ffffff"/>' +
+    '</svg>'
+  );
+
 // ★ 1. 전화번호 마스킹 (010-****-5678)
 const maskPhoneNumber = (phone: string) => {
   if (!phone) return "";
@@ -409,6 +419,27 @@ export default function Dashboard() {
 
         {/* 구글 지도 영역 */}
         <div className="flex-1 relative">
+          {/* 마커 색상 안내 배너 (병원 화면에서만) */}
+          {userRole === 'hospital' && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 w-max max-w-[92%] pointer-events-none">
+              <div className="bg-white/95 backdrop-blur-sm shadow-md border border-gray-100 rounded-xl px-4 py-2">
+                <div className="flex items-center justify-center gap-2.5 text-xs text-gray-700">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0"></span>
+                    출퇴근 가능 거리 안
+                  </span>
+                  <span className="text-gray-300">·</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-purple-500 inline-block shrink-0"></span>
+                    거리 밖
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-400 text-center mt-0.5">
+                  인재가 설정한 출퇴근 가능 거리를 기준으로 표시됩니다.
+                </p>
+              </div>
+            </div>
+          )}
           <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
             <GoogleMap
               mapContainerStyle={containerStyle}
@@ -431,7 +462,7 @@ export default function Dashboard() {
                   <Marker
                     key={item.id}
                     position={pos}
-                    icon={outOfRange ? { url: 'http://maps.google.com/mapfiles/ms/icons/grey.png' } : undefined}
+                    icon={outOfRange ? { url: OUT_OF_RANGE_MARKER_ICON } : undefined}
                     onClick={() => setSelectedPin(item)}
                   />
                 );
