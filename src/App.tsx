@@ -11,6 +11,7 @@ import EditProfile from './pages/EditProfile';
 import EditHospital from './pages/EditHospital'; // 새로 추가
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import RouteGuard from './components/RouteGuard';
 
 function App() {
   return (
@@ -20,14 +21,14 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register/hospital" element={<RegisterHospital />} />
         <Route path="/register/worker" element={<RegisterWorker />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/hospital/post" element={<PostJob />} />
-        <Route path="/hospital/jobs" element={<MyJobs />} />
-        <Route path="/hospital/jobs/:id/edit" element={<EditJob />} />
-        <Route path="/worker/profile" element={<EditProfile />} />
+        <Route path="/dashboard" element={<RouteGuard allow="any"><Dashboard /></RouteGuard>} />
+        <Route path="/hospital/post" element={<RouteGuard allow="hospital"><PostJob /></RouteGuard>} />
+        <Route path="/hospital/jobs" element={<RouteGuard allow="hospital"><MyJobs /></RouteGuard>} />
+        <Route path="/hospital/jobs/:id/edit" element={<RouteGuard allow="hospital"><EditJob /></RouteGuard>} />
+        <Route path="/worker/profile" element={<RouteGuard allow="worker"><EditProfile /></RouteGuard>} />
 
         {/* 병원 정보 수정 경로 추가 */}
-        <Route path="/hospital/edit" element={<EditHospital />} />
+        <Route path="/hospital/edit" element={<RouteGuard allow="hospital"><EditHospital /></RouteGuard>} />
 
         {/* 법적 페이지 */}
         <Route path="/privacy" element={<PrivacyPolicy />} />
