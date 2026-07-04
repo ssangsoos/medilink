@@ -7,6 +7,7 @@ import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
 import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 import { haversineKm, formatDistance } from '../lib/distance';
+import { safeHttpUrl, safeTelDigits } from '../lib/sanitize';
 import {
   formatAvailableFrom,
   formatFromOptions,
@@ -191,7 +192,7 @@ export default function Dashboard() {
 
   const getSmsHref = (phone: string) => {
     const message = "안녕하세요, 메디노티를 보고 연락드립니다.";
-    return `sms:${phone}?body=${encodeURIComponent(message)}`;
+    return `sms:${safeTelDigits(phone)}?body=${encodeURIComponent(message)}`;
   };
 
   // 병원이 "이 공고만 다른 번호 사용"으로 등록한 경우, 대표 표시·메인 문자 버튼도
@@ -617,16 +618,20 @@ export default function Dashboard() {
                                                             문자 수신 번호 미등록
                                                         </div>
                                                     )}
-                                                    {job.kakao_link && (
-                                                        <a
-                                                            href={job.kakao_link}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
-                                                        >
-                                                            💬 카카오톡 문의
-                                                        </a>
-                                                    )}
+                                                    {(() => {
+                                                        // 위험 스킴(javascript: 등)·잘못된 링크는 렌더하지 않음 (기존 데이터까지 방어)
+                                                        const safeKakao = safeHttpUrl(job.kakao_link);
+                                                        return safeKakao ? (
+                                                            <a
+                                                                href={safeKakao}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
+                                                            >
+                                                                💬 카카오톡 문의
+                                                            </a>
+                                                        ) : null;
+                                                    })()}
                                                 </div>
                                             </div>
                                             );

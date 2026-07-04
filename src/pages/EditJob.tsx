@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, MessageCircle, Calendar, Infinity as InfinityIcon, Briefcase, AlertCircle, Phone } from 'lucide-react';
 import { MEDICAL_LICENSE_TYPES, JOB_CATEGORY_OTHER } from '../lib/medicalConstants';
+import { safeHttpUrl } from '../lib/sanitize';
 import type { JobPosting, ScheduleType } from '../types/jobPosting';
 
 const DESCRIPTION_PLACEHOLDER = '예) 임플란트 수술 어시스트 경험자 우대. 숙련도에 따라 시급 협의 (일반적으로 2~4만원 선).';
@@ -120,6 +121,9 @@ export default function EditJob() {
     if (phoneMode === 'custom' && !customPhone.trim()) {
       return '연락받을 새 전화번호를 입력해주세요.';
     }
+    if (kakaoLink.trim() !== '' && !safeHttpUrl(kakaoLink)) {
+      return '카카오 링크는 http(s):// 로 시작하는 올바른 주소여야 합니다.';
+    }
     return null;
   };
 
@@ -128,10 +132,7 @@ export default function EditJob() {
     return customPhone.trim() || null;
   };
 
-  const normalizeKakao = (link: string): string | null => {
-    const trimmed = link.trim();
-    return trimmed === '' ? null : trimmed;
-  };
+  const normalizeKakao = (link: string): string | null => safeHttpUrl(link);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
