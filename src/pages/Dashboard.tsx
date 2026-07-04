@@ -6,7 +6,7 @@ import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/ap
 import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
 import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
-import { haversineKm, jitterCoords, formatDistance } from '../lib/distance';
+import { haversineKm, formatDistance } from '../lib/distance';
 import {
   formatAvailableFrom,
   formatFromOptions,
@@ -106,15 +106,16 @@ export default function Dashboard() {
       }
 
       if (profile?.role === 'hospital') {
+        // 개인정보 보호: 원본 profiles가 아니라 안전 가공 뷰(public_profiles)에서 조회한다.
+        // 뷰가 이미 is_exposed=true 의료인만 노출하고, 전화·좌표를 서버에서 마스킹/흐림 처리한다.
         const { data: workers } = await supabase
-          .from('profiles')
+          .from('public_profiles')
           .select('*')
-          .eq('role', 'worker')
-          .eq('is_exposed', true);
+          .eq('role', 'worker');
         setItems(workers || []);
       } else {
         const { data: hospitals } = await supabase
-          .from('profiles')
+          .from('public_profiles')
           .select('*')
           .eq('role', 'hospital');
         setItems(hospitals || []);
@@ -222,13 +223,10 @@ export default function Dashboard() {
     return item.address;
   };
 
-  // 의료인 마커는 거주지 특정을 막기 위해 ID 기반 결정론적 노이즈를 적용
+  // 좌표 흐림은 서버(public_profiles 뷰)에서 처리된다.
+  // 의료인은 이미 흐린 좌표, 병원은 정확 좌표가 내려오므로 여기서는 그대로 사용한다.
   const getDisplayPosition = (item: any): { lat: number; lng: number } => {
     if (!item?.latitude || !item?.longitude) return { lat: 0, lng: 0 };
-    if (item.license_type) {
-      const j = jitterCoords(item.id, item.latitude, item.longitude);
-      return { lat: j.lat, lng: j.lon };
-    }
     return { lat: item.latitude, lng: item.longitude };
   };
 
