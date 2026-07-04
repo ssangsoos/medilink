@@ -21,8 +21,13 @@
 - **C-3 / H-2** 쓰기 정책 점검 결과 이미 안전(`profiles` update/insert = `auth.uid()=id`,
   `job_postings` insert/update/delete = `auth.uid()=hospital_id`). SELECT까지 잠가 IDOR 경로 종료.
 
+- **H-1** 역할(role) 가드 라우트 래퍼 완료 — `RouteGuard` 컴포넌트로 병원/의료인 전용
+  경로 보호(커밋 `12833d6`, 병합 `747ea32`, 운영 배포·검증 완료). URL 직접 입력 시 `/dashboard`로 리다이렉트.
+  - 함께 발견·수정: **SPA 라우팅 fallback 부재** → `vercel.json` rewrite 추가(커밋 `10e6bed`).
+    딥링크/새로고침 시 Vercel 404 나던 잠재 버그 해결.
+  - *후속 권장: 서버측 role 강제(job_postings insert 시 role='hospital' RLS 확인). 영향 낮아 미적용.*
+
 **남음 (다음 순서)**
-- **H-1** 역할(role) 가드 라우트 래퍼 (병원/의료인 페이지 상호 침범 차단)
 - **H-3** `kakao_link` 등 사용자 입력 URL 스킴 화이트리스트
 - **M-2** 입력 검증 + 좌표 실패 `(0,0)` 데이터 정리 (예: 뷰 검증 중 발견된 '허혜선' 행)
 - **M-3** `job_postings` 느슨한 `true` SELECT 정책·중복 정책 정리, 탈퇴 시 공고 고아화
