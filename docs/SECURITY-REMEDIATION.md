@@ -26,13 +26,84 @@
   - 함께 발견·수정: **SPA 라우팅 fallback 부재** → `vercel.json` rewrite 추가(커밋 `10e6bed`).
     딥링크/새로고침 시 Vercel 404 나던 잠재 버그 해결.
   - *후속 권장: 서버측 role 강제(job_postings insert 시 role='hospital' RLS 확인). 영향 낮아 미적용.*
+- **H-3** 사용자 입력 링크·전화 스킴 살균 완료 — `src/lib/sanitize.ts`(`safeHttpUrl`/`safeTelDigits`),
+  Dashboard 렌더 시 `kakao_link` 검증 후 렌더(위험 스킴·기존 나쁜 데이터 차단), sms href 전화 살균,
+  PostJob/EditJob 저장 시 차단+검증 메시지 (커밋 `a22db61`, 병합 `385dc05`, 운영 배포·검증 완료).
 
 **남음 (다음 순서)**
-- **H-3** `kakao_link` 등 사용자 입력 URL 스킴 화이트리스트
 - **M-2** 입력 검증 + 좌표 실패 `(0,0)` 데이터 정리 (예: 뷰 검증 중 발견된 '허혜선' 행)
 - **M-3** `job_postings` 느슨한 `true` SELECT 정책·중복 정책 정리, 탈퇴 시 공고 고아화
 - **L-1** 탈퇴 시 auth 계정까지 삭제(Edge Function) — *참고: `profiles`에 DELETE 정책이 없어 현재 탈퇴가 RLS에 막혀 실제로 안 될 가능성. 확인 필요.*
 - **L-2** 민감정보 콘솔 로깅 정리 · **L-3** 하드코딩된 개인 이메일 교체
+
+> **다음 세션은 아래 "다음 세션 실행 계획"부터 시작하면 됩니다.**
+
+---
+
+## 🚀 다음 세션 실행 계획 (턴키)
+
+> 안상수님이 다음에 오시면 **이 순서대로** 진행하면 됩니다. 각 항목은 독립적이고,
+> 코드 변경은 프리뷰 브랜치 → 테스트 → main 병합 방식(지금까지와 동일)으로 무중단 진행.
+
+### STEP A. 먼저 진단 SQL 실행 (Supabase SQL Editor) — 의사결정용 정보 수집
+
+아래를 실행해 결과를 Claude에게 보여주면, M-2·M-3·L-1의 정확한 작업 범위가 정해진다.
+
+```sql
+-- A-1. 탈퇴가 실제로 막혀 있는지: profiles에 DELETE 정책이 있나?
+select policyname, cmd from pg_policies
+where tablename = 'profiles' and cmd = 'DELETE';
+-- (결과 0행이면 → 현재 회원 탈퇴가 RLS에 막혀 동작 안 함 → L-1에서 처리)
+
+-- A-2. 좌표 (0,0) 불량 데이터가 몇 건인지 (M-2)
+select count(*) as zero_coord_rows
+from public.profiles
+where (latitude = 0 and longitude = 0) or latitude is null or longitude is null;
+
+-- A-3. 고아 공고: 주인 프로필이 사라진 job_postings (M-3)
+select count(*) as orphan_jobs
+from public.job_postings j
+left join public.profiles p on p.id = j.hospital_id
+where p.id is null;
+
+-- A-4. job_postings 현재 SELECT 정책 (느슨한 true·중복 확인) (M-3)
+select policyname, cmd, roles, qual from pg_policies
+where tablename = 'job_postings' and cmd = 'SELECT';
+
+-- A-5. profiles 중복 UPDATE 정책 확인 (M-3 정리)
+select policyname, cmd, qual, with_check from pg_policies
+where tablename = 'profiles' and cmd = 'UPDATE';
+```
+
+### STEP B. M-2 — 입력 검증 + (0,0) 좌표 정리
+- **코드(프리뷰→병합)**: `RegisterWorker.tsx`·`RegisterHospital.tsx`에서 좌표 변환 실패 시
+  `(0,0)` 저장 금지 → 저장 막고 "주소를 다시 확인" 안내. 전화/사업자번호 형식 검증 추가.
+  `geocode.ts`가 실패를 명확히 반환하도록.
+- **데이터(SQL, 사용자 실행)**: A-2에서 잡힌 (0,0) 행을 어떻게 할지 결정 —
+  (a) 뷰에서 제외(지도에서 숨김), 또는 (b) 해당 회원에게 주소 재입력 요청.
+  결정 나면 뷰 `where`에 `and latitude <> 0` 등을 추가하거나 데이터 보정.
+
+### STEP C. M-3 — job_postings 정책 정리 (한 번에 하나씩, 롤백 준비)
+- A-4 결과 보고 **느슨한 `true` SELECT 정책** 드롭(활성 공고만 보이게). **결정 필요**: 랜딩페이지가
+  비로그인 사용자에게 공고를 보여줄 필요가 있나? 없으면 익명 읽기도 제한.
+- 중복 SELECT/UPDATE 정책(A-5) 정리.
+- 탈퇴 시 공고 고아화 → L-1의 Edge Function에서 함께 정리하거나 FK `on delete cascade`.
+
+### STEP D. L-1 — 탈퇴 완전 처리 (Supabase Edge Function)
+- A-1에서 탈퇴가 막혀 있으면 **우선순위 상승**(실사용자 영향).
+- `service_role` 키를 쓰는 Edge Function 작성: auth 계정 + profiles + 관련 job_postings 원자적 삭제.
+- 이건 서버 함수라 배포 방식이 다름(Supabase Functions) — Claude가 코드+배포 절차 안내.
+
+### STEP E. L-2 / L-3 — 가벼운 정리 (프리뷰→병합)
+- **L-2**: `RegisterWorker.tsx:113`·`RegisterHospital.tsx:128`의 `console.error(…user.id…)` 정리. *(코드 2곳, 즉시 가능)*
+- **L-3**: `EditProfile.tsx:472`·`EditHospital.tsx:287` 하드코딩된 고객센터 이메일/번호.
+  **결정 필요**: 운영용 대표 이메일로 교체할지, 그대로 둘지.
+
+### 사용자 결정이 필요한 항목 (미리 생각해두면 빠름)
+1. **(0,0) 좌표 회원** 처리: 지도에서 숨김 vs 재입력 요청 (STEP B)
+2. **비로그인 사용자에게 공고 공개** 여부: 랜딩/SEO상 필요한가? (STEP C)
+3. **고객센터 연락처**: 개인 Gmail → 대표 이메일 교체할지 (STEP E, L-3)
+4. **탈퇴 기능**: 지금 안 되고 있다면 Edge Function 구축 우선순위 (STEP D, L-1)
 
 ---
 
