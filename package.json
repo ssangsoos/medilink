@@ -13,10 +13,12 @@
     "@react-google-maps/api": "^2.20.7",
     "@supabase/supabase-js": "^2.86.0",
     "clsx": "^2.1.1",
+    "i18next": "^26.3.4",
     "lucide-react": "^0.555.0",
     "react": "^19.2.0",
     "react-daum-postcode": "^3.2.0",
     "react-dom": "^19.2.0",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.10.0"
   },
   "devDependencies": {

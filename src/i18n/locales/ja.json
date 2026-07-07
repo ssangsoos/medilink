@@ -1,0 +1,44 @@
+{
+  "common": {
+    "appName": "Medinoti"
+  },
+  "landing": {
+    "tagline": "医療従事者の求人・求職の新しい基準",
+    "hospitalSignup": "病院の会員登録",
+    "hospitalSignupDesc": "人材をお探しですか？",
+    "workerSignup": "医療従事者の会員登録",
+    "workerSignupDesc": "良い仕事をお探しですか？",
+    "login": "ログイン",
+    "loginDesc": "すでにアカウントをお持ちですか？",
+    "loginAction": "ログイン"
+  },
+  "login": {
+    "title": "Medinoti ログイン",
+    "subtitle": "医療とあなたをつなぐ、Medinoti",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "submitting": "ログイン中...",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "goSignup": "会員登録へ",
+    "errEmailNotConfirmed": "メール認証が完了していません。\n\n登録時に届いた認証メールのリンクをクリックしてから、再度ログインしてください。\nメールが見当たらない場合は迷惑メールフォルダもご確認ください。",
+    "errLoginFailPrefix": "ログイン失敗: "
+  },
+  "footer": {
+    "brand": "Medinoti",
+    "descriptionLine1": "病院と医療従事者を最も速く確実につなぐ地図ベースのマッチングプラットフォーム",
+    "descriptionLine2": "（歯科衛生士・看護師・看護助手の求人・求職）",
+    "company": "会社名",
+    "companyValue": "株式会社スマイルアップ",
+    "ceo": "代表者",
+    "ceoValue": "アン・サンス",
+    "bizNo": "事業者登録番号",
+    "salesNo": "通信販売業申告",
+    "address": "住所",
+    "addressValue": "仁川広域市南洞区九月路247 スマイルアップ事務所",
+    "support": "カスタマーセンター",
+    "contact": "連絡先",
+    "privacy": "個人情報処理方針",
+    "terms": "利用規約"
+  }
+}
