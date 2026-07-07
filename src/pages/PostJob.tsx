@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { ArrowLeft, MessageCircle, Calendar, Infinity as InfinityIcon, Briefcase, Phone } from 'lucide-react';
 import { MEDICAL_LICENSE_TYPES, JOB_CATEGORY_OTHER } from '../lib/medicalConstants';
 import { safeHttpUrl } from '../lib/sanitize';
 import type { ScheduleType } from '../types/jobPosting';
 
-const DESCRIPTION_PLACEHOLDER = '예) 임플란트 수술 어시스트 경험자 우대. 숙련도에 따라 시급 협의 (일반적으로 2~4만원 선).';
-
 export default function PostJob() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [hospitalLocation, setHospitalLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [hospitalMobile, setHospitalMobile] = useState<string>('');
@@ -54,28 +55,28 @@ export default function PostJob() {
   const isOther = jobCategory === JOB_CATEGORY_OTHER;
 
   const validate = (): string | null => {
-    if (!jobCategory) return '구인 직종을 선택해주세요.';
-    if (isOther && !jobCategoryCustom.trim()) return '기타 직종명을 입력해주세요.';
+    if (!jobCategory) return t('jobForm.errCategoryRequired');
+    if (isOther && !jobCategoryCustom.trim()) return t('jobForm.errCategoryCustomRequired');
     if (scheduleType === 'specific') {
       if (!startDate || !endDate || !startTime || !endTime) {
-        return '특정 일시를 선택한 경우 근무일/시간을 모두 입력해주세요.';
+        return t('jobForm.errScheduleIncomplete');
       }
-      if (startDate > endDate) return '종료일이 시작일보다 빠를 수 없습니다.';
+      if (startDate > endDate) return t('jobForm.errEndDateBeforeStart');
       if (startDate === endDate && startTime >= endTime) {
-        return '같은 날짜 내 종료 시간은 시작 시간보다 늦어야 합니다.';
+        return t('jobForm.errEndTimeBeforeStart');
       }
     }
     if (!wageNegotiable) {
       const wage = Number(hourlyRate);
       if (!hourlyRate || Number.isNaN(wage) || wage <= 0) {
-        return '시급을 입력하거나 "시급 협의 가능"을 선택해주세요.';
+        return t('jobForm.errWageRequired');
       }
     }
     if (phoneMode === 'custom' && !customPhone.trim()) {
-      return '연락받을 새 전화번호를 입력해주세요.';
+      return t('jobForm.errCustomPhoneRequired');
     }
     if (kakaoLink.trim() !== '' && !safeHttpUrl(kakaoLink)) {
-      return '카카오 링크는 http(s):// 로 시작하는 올바른 주소여야 합니다.';
+      return t('jobForm.errKakaoInvalid');
     }
     return null;
   };
@@ -98,7 +99,7 @@ export default function PostJob() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('로그인이 필요합니다.');
+      if (!user) throw new Error(t('jobForm.errLoginRequired'));
 
       const payload = {
         hospital_id: user.id,
@@ -123,10 +124,10 @@ export default function PostJob() {
       const { error } = await supabase.from('job_postings').insert([payload]);
       if (error) throw error;
 
-      alert('공고가 성공적으로 등록되었습니다!');
+      alert(t('jobForm.postSuccess'));
       navigate('/hospital/jobs');
     } catch (error: any) {
-      alert('등록 실패: ' + error.message);
+      alert(t('jobForm.postFailPrefix') + error.message);
     } finally {
       setLoading(false);
     }
@@ -136,13 +137,13 @@ export default function PostJob() {
     <div className="min-h-screen bg-gray-50 py-10 px-4 flex items-center justify-center">
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="bg-blue-600 p-6 text-center text-white">
-          <h2 className="text-2xl font-bold">새 채용 공고 등록</h2>
-          <p className="text-blue-100 text-sm mt-1">원하는 직종 · 일시 · 시급을 입력해주세요</p>
+          <h2 className="text-2xl font-bold">{t('jobForm.postTitle')}</h2>
+          <p className="text-blue-100 text-sm mt-1">{t('jobForm.postSubtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div>
-            <label htmlFor="post-job-title" className="block text-sm font-bold text-gray-900 mb-1">공고 제목</label>
+            <label htmlFor="post-job-title" className="block text-sm font-bold text-gray-900 mb-1">{t('jobForm.titleLabel')}</label>
             <input
               id="post-job-title"
               type="text"
@@ -150,13 +151,13 @@ export default function PostJob() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3 border rounded-xl"
-              placeholder="예: 치과위생사 대타 구합니다"
+              placeholder={t('jobForm.titlePlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="post-job-category" className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
-              <Briefcase size={16} className="text-blue-600" /> 구인 직종
+              <Briefcase size={16} className="text-blue-600" /> {t('jobForm.categoryLabel')}
             </label>
             <select
               id="post-job-category"
@@ -165,11 +166,11 @@ export default function PostJob() {
               onChange={(e) => setJobCategory(e.target.value)}
               className="w-full p-3 border rounded-xl bg-white"
             >
-              <option value="">직종을 선택해주세요</option>
+              <option value="">{t('jobForm.categoryPlaceholder')}</option>
               {MEDICAL_LICENSE_TYPES.map((type) => (
-                <option key={type} value={type}>{type}</option>
+                <option key={type} value={type}>{t('licenseTypes.' + type, { defaultValue: type })}</option>
               ))}
-              <option value={JOB_CATEGORY_OTHER}>{JOB_CATEGORY_OTHER} (직접 입력)</option>
+              <option value={JOB_CATEGORY_OTHER}>{t('jobForm.categoryOtherOption')}</option>
             </select>
             {isOther && (
               <input
@@ -179,27 +180,27 @@ export default function PostJob() {
                 value={jobCategoryCustom}
                 onChange={(e) => setJobCategoryCustom(e.target.value)}
                 className="w-full p-3 border rounded-xl mt-2"
-                placeholder="직종명을 입력해주세요 (최대 30자)"
+                placeholder={t('jobForm.categoryCustomPlaceholder')}
               />
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-900 mb-2">근무 일시</label>
+            <label className="block text-sm font-bold text-gray-900 mb-2">{t('jobForm.scheduleLabel')}</label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               <button
                 type="button"
                 onClick={() => setScheduleType('specific')}
                 className={`p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-colors ${scheduleType === 'specific' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
               >
-                <Calendar size={16} /> 특정 일시 지정
+                <Calendar size={16} /> {t('jobForm.scheduleSpecific')}
               </button>
               <button
                 type="button"
                 onClick={() => setScheduleType('always')}
                 className={`p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-colors ${scheduleType === 'always' ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'}`}
               >
-                <InfinityIcon size={16} /> 항시 구인
+                <InfinityIcon size={16} /> {t('jobForm.scheduleAlways')}
               </button>
             </div>
 
@@ -207,21 +208,21 @@ export default function PostJob() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="post-job-start-date" className="block text-xs font-bold text-gray-600 mb-1">근무 시작일</label>
+                    <label htmlFor="post-job-start-date" className="block text-xs font-bold text-gray-600 mb-1">{t('jobForm.startDateLabel')}</label>
                     <input id="post-job-start-date" type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full p-3 border rounded-xl" />
                   </div>
                   <div>
-                    <label htmlFor="post-job-end-date" className="block text-xs font-bold text-gray-600 mb-1">근무 종료일</label>
+                    <label htmlFor="post-job-end-date" className="block text-xs font-bold text-gray-600 mb-1">{t('jobForm.endDateLabel')}</label>
                     <input id="post-job-end-date" type="date" required value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full p-3 border rounded-xl" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="post-job-start-time" className="block text-xs font-bold text-gray-600 mb-1">시작 시간</label>
+                    <label htmlFor="post-job-start-time" className="block text-xs font-bold text-gray-600 mb-1">{t('jobForm.startTimeLabel')}</label>
                     <input id="post-job-start-time" type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full p-3 border rounded-xl" />
                   </div>
                   <div>
-                    <label htmlFor="post-job-end-time" className="block text-xs font-bold text-gray-600 mb-1">종료 시간</label>
+                    <label htmlFor="post-job-end-time" className="block text-xs font-bold text-gray-600 mb-1">{t('jobForm.endTimeLabel')}</label>
                     <input id="post-job-end-time" type="time" required value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full p-3 border rounded-xl" />
                   </div>
                 </div>
@@ -230,14 +231,14 @@ export default function PostJob() {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex items-start gap-2">
                 <InfinityIcon size={16} className="mt-0.5 shrink-0" />
                 <span>
-                  <strong>항시 구인 모드입니다.</strong> 특정 날짜 없이 상시 인력을 구합니다. 공고 설명란에 "원하는 근무 요일/시간대"를 자유롭게 적어주세요.
+                  <strong>{t('jobForm.alwaysModeTitle')}</strong> {t('jobForm.alwaysModeDescPost')}
                 </span>
               </div>
             )}
           </div>
 
           <div>
-            <label htmlFor="post-job-hourly-rate" className="block text-sm font-bold text-gray-900 mb-1">시급 (원)</label>
+            <label htmlFor="post-job-hourly-rate" className="block text-sm font-bold text-gray-900 mb-1">{t('jobForm.hourlyRateLabel')}</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg pointer-events-none">₩</span>
               <input
@@ -258,12 +259,12 @@ export default function PostJob() {
                 onChange={(e) => setWageNegotiable(e.target.checked)}
                 className="h-4 w-4"
               />
-              시급 협의 가능 (구체 금액은 면접/상담 시 확정)
+              {t('jobForm.wageNegotiableLabel')}
             </label>
           </div>
 
           <div>
-            <label htmlFor="post-job-description" className="block text-sm font-bold text-gray-900 mb-1">상세 업무 내용</label>
+            <label htmlFor="post-job-description" className="block text-sm font-bold text-gray-900 mb-1">{t('jobForm.descriptionLabel')}</label>
             <textarea
               id="post-job-description"
               required
@@ -271,13 +272,13 @@ export default function PostJob() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full p-3 border rounded-xl"
-              placeholder={DESCRIPTION_PLACEHOLDER}
+              placeholder={t('jobForm.descriptionPlaceholder')}
             />
           </div>
 
           <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
             <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-1">
-              <Phone size={16} className="text-blue-600" /> 지원자가 문자로 연락받을 번호
+              <Phone size={16} className="text-blue-600" /> {t('jobForm.phoneSectionLabel')}
             </label>
             <div className="space-y-2">
               <label className={`flex items-start gap-2 p-3 bg-white rounded-lg border cursor-pointer ${phoneMode === 'default' ? 'border-blue-500' : 'border-gray-200'} ${!hospitalMobile ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -290,11 +291,11 @@ export default function PostJob() {
                   className="mt-0.5"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-gray-900">병원에 등록된 휴대폰 사용</div>
+                  <div className="text-sm font-bold text-gray-900">{t('jobForm.phoneDefaultOption')}</div>
                   <div className="text-xs text-gray-600 mt-0.5">
                     {hospitalMobile
                       ? hospitalMobile
-                      : '병원 정보에 휴대폰이 등록되어 있지 않습니다. 정보수정 화면에서 등록하거나 아래에 직접 입력해주세요.'}
+                      : t('jobForm.noHospitalMobileHint')}
                   </div>
                 </div>
               </label>
@@ -307,13 +308,13 @@ export default function PostJob() {
                   className="mt-0.5"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-gray-900">이 공고만 다른 번호 사용</div>
+                  <div className="text-sm font-bold text-gray-900">{t('jobForm.phoneCustomOption')}</div>
                   <input
                     type="tel"
                     value={customPhone}
                     onChange={(e) => setCustomPhone(e.target.value)}
                     onFocus={() => setPhoneMode('custom')}
-                    placeholder="010-0000-0000"
+                    placeholder={t('jobForm.phonePlaceholder')}
                     className="mt-2 w-full p-2 border border-gray-300 rounded-lg text-sm"
                   />
                 </div>
@@ -323,7 +324,7 @@ export default function PostJob() {
 
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
             <label htmlFor="post-job-kakao" className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
-              <MessageCircle size={16} className="text-yellow-600" /> 카카오톡 오픈채팅방 링크 <span className="text-xs font-normal text-gray-500">(선택)</span>
+              <MessageCircle size={16} className="text-yellow-600" /> {t('jobForm.kakaoLabel')} <span className="text-xs font-normal text-gray-500">{t('jobForm.optionalTag')}</span>
             </label>
             <input
               id="post-job-kakao"
@@ -333,23 +334,26 @@ export default function PostJob() {
               className="w-full p-3 border border-yellow-300 rounded-xl bg-white"
               placeholder="https://open.kakao.com/o/..."
             />
-            <p className="text-xs text-gray-500 mt-1">비워두면 문자 보내기만 노출됩니다.</p>
+            <p className="text-xs text-gray-500 mt-1">{t('jobForm.kakaoHint')}</p>
           </div>
 
           <button
             disabled={loading}
             className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg mt-4 disabled:bg-gray-400"
           >
-            {loading ? '등록 중...' : '공고 등록 완료'}
+            {loading ? t('jobForm.submitting') : t('jobForm.submitPost')}
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="w-full text-gray-500 py-2 flex items-center justify-center gap-1 hover:text-gray-900"
-          >
-            <ArrowLeft size={16} /> 취소하고 돌아가기
-          </button>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="text-gray-500 py-2 flex items-center gap-1 hover:text-gray-900"
+            >
+              <ArrowLeft size={16} /> {t('jobForm.cancelBackPost')}
+            </button>
+            <LanguageSwitcher />
+          </div>
         </form>
       </div>
     </div>
