@@ -30,11 +30,18 @@
   Dashboard 렌더 시 `kakao_link` 검증 후 렌더(위험 스킴·기존 나쁜 데이터 차단), sms href 전화 살균,
   PostJob/EditJob 저장 시 차단+검증 메시지 (커밋 `a22db61`, 병합 `385dc05`, 운영 배포·검증 완료).
 
+- **M-3** 정책 정리 완료 (2026-07-07) — `job_postings`의 느슨한 `true` SELECT 정책 제거 + 남은
+  정책을 `to authenticated`로 제한, `profiles` 중복 UPDATE 정책 정리. (진단: 고아 공고 0건)
+- **L-1 Phase 1** 탈퇴 실작동 복구 완료 (2026-07-07) — 진단 결과 `profiles`에 DELETE 정책이 없어
+  탈퇴가 조용히 실패하며 거짓 성공 메시지를 띄우고 있었음. FK `job_postings_hospital_id_fkey`를
+  `on delete cascade`로 교체 + `profiles`에 본인 DELETE 정책 추가. 이제 탈퇴 시 프로필 전체 개인정보 +
+  해당 병원 공고가 실제로 즉시 삭제됨. (코드 변경 없이 기존 탈퇴 코드가 정상 동작)
+
 **남음 (다음 순서)**
-- **M-2** 입력 검증 + 좌표 실패 `(0,0)` 데이터 정리 (예: 뷰 검증 중 발견된 '허혜선' 행)
-- **M-3** `job_postings` 느슨한 `true` SELECT 정책·중복 정책 정리, 탈퇴 시 공고 고아화
-- **L-1** 탈퇴 시 auth 계정까지 삭제(Edge Function) — *참고: `profiles`에 DELETE 정책이 없어 현재 탈퇴가 RLS에 막혀 실제로 안 될 가능성. 확인 필요.*
-- **L-2** 민감정보 콘솔 로깅 정리 · **L-3** 하드코딩된 개인 이메일 교체
+- **L-1 Phase 2** auth 계정(이메일+해시)까지 완전 삭제 — `service_role` Edge Function 필요(클라 불가). 개인정보(프로필)는 Phase 1에서 이미 파기됨.
+- **M-2** 입력 검증 + 좌표 `(0,0)`/NULL 데이터 정리 — 진단상 **25건**. 코드(등록 시 (0,0) 저장 금지) + 데이터 처리(숨김 vs 재입력).
+- **L-2** 민감정보 콘솔 로깅 정리 (`RegisterWorker.tsx:113`, `RegisterHospital.tsx:128`)
+- **L-3** 하드코딩된 개인 이메일 교체 (`EditProfile.tsx:472`, `EditHospital.tsx:287`) — *교체할 대표 이메일 결정 필요*
 
 > **다음 세션은 아래 "다음 세션 실행 계획"부터 시작하면 됩니다.**
 
