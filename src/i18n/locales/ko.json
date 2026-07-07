@@ -104,5 +104,41 @@
     "dental": "치과",
     "oriental": "한방",
     "other": "기타"
+  },
+  "distance": {
+    "within1km": "1km 이내",
+    "about2km": "약 2km",
+    "about5km": "약 5km",
+    "about10km": "약 10km",
+    "about20km": "약 20km",
+    "about30km": "약 30km",
+    "about50km": "약 50km",
+    "over70km": "70km 이상"
+  },
+  "options": {
+    "now": "오늘부터",
+    "1week": "1주 내",
+    "2weeks": "2주 후",
+    "flexible": "협의",
+    "one_off": "단발/대타",
+    "regular": "정기 근무",
+    "fulltime": "풀타임 전환",
+    "mon": "월",
+    "tue": "화",
+    "wed": "수",
+    "thu": "목",
+    "fri": "금",
+    "sat": "토",
+    "sun": "일",
+    "morning": "오전",
+    "afternoon": "오후",
+    "evening": "저녁"
+  },
+  "job": {
+    "negotiable": "협의 가능",
+    "undecidedWage": "미정",
+    "always": "항시 구인",
+    "undecidedSchedule": "일정 미정",
+    "unspecifiedCategory": "직종 미지정"
   }
 }
