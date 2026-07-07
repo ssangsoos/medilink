@@ -95,5 +95,41 @@
     "smsMessage": "Hello, I'm reaching out after seeing your profile on Medinoti.",
     "noSmsHelpKakao": "* This hospital has no text number. Please use the KakaoTalk inquiry on the posting above.",
     "smsMobileHelp": "* You can send texts on a mobile device."
+  },
+  "hospitalType": {
+    "animal": "Animal Hospital",
+    "pharmacy": "Pharmacy",
+    "nursing": "Nursing Hospital",
+    "medical": "General Medical",
+    "dental": "Dental Clinic",
+    "oriental": "Korean Medicine",
+    "other": "Other"
+  },
+  "licenseTypes": {
+    "간호사": "Nurse",
+    "간호조무사": "Nursing Assistant",
+    "물리치료사": "Physical Therapist",
+    "방사선사": "Radiologic Technologist",
+    "보건교육사": "Health Educator",
+    "수의사": "Veterinarian",
+    "안경사": "Optician",
+    "약사": "Pharmacist",
+    "언어재활사": "Speech-Language Pathologist",
+    "영양사": "Dietitian",
+    "위생사": "Sanitarian",
+    "의무기록사": "Medical Records Technician",
+    "의사": "Doctor",
+    "의지보조기기사": "Prosthetist-Orthotist",
+    "임상병리사": "Clinical Laboratory Technologist",
+    "작업치료사": "Occupational Therapist",
+    "조산사": "Midwife",
+    "치과기공사": "Dental Technician",
+    "치과위생사": "Dental Hygienist",
+    "치과의사": "Dentist",
+    "코디네이터": "Coordinator",
+    "한약사": "Korean Herbal Pharmacist",
+    "한의사": "Korean Medicine Doctor",
+    "응급구조사(1급)": "Emergency Medical Technician (Level 1)",
+    "응급구조사(2급)": "Emergency Medical Technician (Level 2)"
   }
 }

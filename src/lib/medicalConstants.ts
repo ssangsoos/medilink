@@ -1,4 +1,8 @@
 export const MEDICAL_LICENSE_TYPES = [
+  // 치과 집중 광고를 위해 치과 관련 직종을 맨 앞에 노출 (이하 가나다순)
+  "치과위생사",
+  "치과의사",
+  "치과기공사",
   "간호사",
   "간호조무사",
   "물리치료사",
@@ -16,9 +20,6 @@ export const MEDICAL_LICENSE_TYPES = [
   "임상병리사",
   "작업치료사",
   "조산사",
-  "치과기공사",
-  "치과위생사",
-  "치과의사",
   "코디네이터",
   "한약사",
   "한의사",
@@ -29,11 +30,12 @@ export const MEDICAL_LICENSE_TYPES = [
 export type MedicalLicenseType = typeof MEDICAL_LICENSE_TYPES[number];
 
 export const HOSPITAL_TYPES = [
+  // 치과 집중 광고를 위해 치과를 맨 앞에 노출
+  { label: "치과", value: "dental" },
   { label: "동물병원", value: "animal" },
   { label: "약국", value: "pharmacy" },
   { label: "요양병원", value: "nursing" },
   { label: "일반 의과", value: "medical" },
-  { label: "치과", value: "dental" },
   { label: "한방", value: "oriental" },
   { label: "기타", value: "other" },
 ] as const;

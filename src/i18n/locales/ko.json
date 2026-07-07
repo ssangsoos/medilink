@@ -95,5 +95,14 @@
     "smsMessage": "안녕하세요, 메디노티를 보고 연락드립니다.",
     "noSmsHelpKakao": "* 이 병원은 문자 수신 번호 미등록. 위 공고의 카카오톡 문의를 이용해주세요.",
     "smsMobileHelp": "* 모바일 환경에서 문자를 보낼 수 있습니다."
+  },
+  "hospitalType": {
+    "animal": "동물병원",
+    "pharmacy": "약국",
+    "nursing": "요양병원",
+    "medical": "일반 의과",
+    "dental": "치과",
+    "oriental": "한방",
+    "other": "기타"
   }
 }

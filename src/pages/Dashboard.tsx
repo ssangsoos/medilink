@@ -312,7 +312,7 @@ export default function Dashboard() {
                                   onClick={() => toggleFilter(type)}
                                   className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${selectedFilters.includes(type) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                               >
-                                  {type}
+                                  {t('licenseTypes.' + type, { defaultValue: type })}
                               </button>
                           ))
                       ) : (
@@ -322,7 +322,7 @@ export default function Dashboard() {
                                   onClick={() => toggleFilter(type.value)}
                                   className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${selectedFilters.includes(type.value) ? 'bg-purple-100 text-purple-700 border-purple-300' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                               >
-                                  {type.label}
+                                  {t('hospitalType.' + type.value)}
                               </button>
                           ))
                       )}
@@ -389,8 +389,9 @@ export default function Dashboard() {
                  <div className="flex justify-between items-start">
                     <div className="font-bold text-gray-800">{item.name || item.hospital_name}</div>
                     <div className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-500">
-                        {userRole === 'hospital' ? item.license_type :
-                            (HOSPITAL_TYPES.find(ht => ht.value === item.hospital_type)?.label || t('dashboard.etc'))}
+                        {userRole === 'hospital'
+                            ? t('licenseTypes.' + item.license_type, { defaultValue: item.license_type })
+                            : t('hospitalType.' + item.hospital_type, { defaultValue: t('dashboard.etc') })}
                     </div>
                  </div>
                  {/* ★ 목록에도 주소 필터 적용 (getDisplayAddress 사용) */}
@@ -527,7 +528,7 @@ export default function Dashboard() {
                                 </div>
                             )}
                             <div className="space-y-1 mb-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                                <div><span className="font-bold text-gray-900">{t('dashboard.license')}:</span> {selectedPin.license_type}</div>
+                                <div><span className="font-bold text-gray-900">{t('dashboard.license')}:</span> {t('licenseTypes.' + selectedPin.license_type, { defaultValue: selectedPin.license_type })}</div>
                                 <div className="whitespace-pre-line"><span className="font-bold text-gray-900">{t('dashboard.experience')}:</span> {selectedPin.experience}</div>
                                 <div><span className="font-bold text-gray-900">{t('dashboard.desiredWage')}:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}{t('dashboard.wonSuffix')}</div>
                                 {selectedPin.available_from && (
@@ -551,7 +552,7 @@ export default function Dashboard() {
                     ) : (
                         <>
                             <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded mb-3">
-                                <span className="font-bold text-gray-900">{t('dashboard.category')}:</span> {HOSPITAL_TYPES.find(ht => ht.value === selectedPin.hospital_type)?.label || t('dashboard.etc')}
+                                <span className="font-bold text-gray-900">{t('dashboard.category')}:</span> {t('hospitalType.' + selectedPin.hospital_type, { defaultValue: t('dashboard.etc') })}
                             </div>
 
                             {/* 병원이 올린 공고 목록 */}
