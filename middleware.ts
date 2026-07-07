@@ -13,13 +13,18 @@ export const config = {
 export default function middleware(request: Request) {
   try {
     const res = next();
-    const country = request.headers.get('x-vercel-ip-country');
-    // 2글자 ISO 국가코드일 때만 심는다. HttpOnly 아님 → 클라이언트 JS가 읽어야 함.
-    if (country && /^[A-Za-z]{2}$/.test(country)) {
-      res.headers.append(
-        'Set-Cookie',
-        `mn_country=${country.toUpperCase()}; Path=/; Max-Age=604800; SameSite=Lax; Secure`,
-      );
+    // 이미 mn_country 쿠키가 있으면 덮어쓰지 않는다. (매 요청 재설정 방지 +
+    // 사용자가 스위처로 언어를 바꿔 심어둔 상태를 존중) 쿠키는 7일 뒤 자동 갱신.
+    const hasCookie = /(?:^|;\s*)mn_country=/.test(request.headers.get('cookie') || '');
+    if (!hasCookie) {
+      const country = request.headers.get('x-vercel-ip-country');
+      // 2글자 ISO 국가코드일 때만 심는다. HttpOnly 아님 → 클라이언트 JS가 읽어야 함.
+      if (country && /^[A-Za-z]{2}$/.test(country)) {
+        res.headers.append(
+          'Set-Cookie',
+          `mn_country=${country.toUpperCase()}; Path=/; Max-Age=604800; SameSite=Lax; Secure`,
+        );
+      }
     }
     return res;
   } catch {
