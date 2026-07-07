@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
-import Footer from '../components/Footer'; 
+import { useTranslation } from 'react-i18next';
+import Footer from '../components/Footer';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center relative overflow-hidden">
-      
+
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher />
+      </div>
+
       {/* 배경 장식 요소들 */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
@@ -24,7 +31,7 @@ export default function LandingPage() {
             Medinoti
           </h1>
           <p className="text-gray-500 mt-2 text-center text-lg">
-            의료인 구인구직의 새로운 기준
+            {t('landing.tagline')}
           </p>
         </div>
 
@@ -43,8 +50,8 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="ml-4 flex-1">
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">병원 회원가입</h3>
-                <p className="text-sm text-gray-500">인재를 찾고 계신가요?</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600">{t('landing.hospitalSignup')}</h3>
+                <p className="text-sm text-gray-500">{t('landing.hospitalSignupDesc')}</p>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -62,8 +69,8 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="ml-4 flex-1">
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600">의료인 회원가입</h3>
-                <p className="text-sm text-gray-500">좋은 일자리를 찾고 계신가요?</p>
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600">{t('landing.workerSignup')}</h3>
+                <p className="text-sm text-gray-500">{t('landing.workerSignupDesc')}</p>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-purple-500" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -77,10 +84,10 @@ export default function LandingPage() {
                     <LogIn className="h-7 w-7 md:h-12 md:w-12 text-gray-600" />
                  </div>
                  <div className="text-left md:text-center flex-1">
-                    <h3 className="text-lg md:text-2xl font-bold text-gray-900">로그인</h3>
-                    <p className="text-gray-500 text-xs md:text-sm mt-1 mb-0 md:mb-4">이미 계정이 있나요?</p>
+                    <h3 className="text-lg md:text-2xl font-bold text-gray-900">{t('landing.login')}</h3>
+                    <p className="text-gray-500 text-xs md:text-sm mt-1 mb-0 md:mb-4">{t('landing.loginDesc')}</p>
                     <span className="hidden md:inline-block w-full py-3 px-6 bg-gray-800 text-white font-bold rounded-lg group-hover:bg-gray-900 transition-colors text-center">
-                      로그인하기
+                      {t('landing.loginAction')}
                     </span>
                  </div>
               </Link>

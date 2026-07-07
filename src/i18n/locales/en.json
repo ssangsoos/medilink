@@ -1,0 +1,44 @@
+{
+  "common": {
+    "appName": "Medinoti"
+  },
+  "landing": {
+    "tagline": "A new standard for medical staffing",
+    "hospitalSignup": "Hospital sign-up",
+    "hospitalSignupDesc": "Looking for talent?",
+    "workerSignup": "Medical professional sign-up",
+    "workerSignupDesc": "Looking for a great job?",
+    "login": "Log in",
+    "loginDesc": "Already have an account?",
+    "loginAction": "Log in"
+  },
+  "login": {
+    "title": "Log in to Medinoti",
+    "subtitle": "Connecting you with healthcare, Medinoti",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in...",
+    "noAccount": "Don't have an account?",
+    "goSignup": "Go to sign-up",
+    "errEmailNotConfirmed": "Your email hasn't been verified yet.\n\nPlease click the link in the verification email you received at sign-up, then log in again.\nIf you don't see it, please check your spam folder.",
+    "errLoginFailPrefix": "Login failed: "
+  },
+  "footer": {
+    "brand": "Medinoti",
+    "descriptionLine1": "A map-based matching platform that connects hospitals and medical professionals quickly and reliably",
+    "descriptionLine2": "(Dental hygienists, nurses, and nursing assistants — jobs & candidates)",
+    "company": "Company",
+    "companyValue": "SmileUp Co., Ltd.",
+    "ceo": "CEO",
+    "ceoValue": "Sangsu An",
+    "bizNo": "Business Reg. No.",
+    "salesNo": "Mail-order Sales No.",
+    "address": "Address",
+    "addressValue": "SmileUp Office, 247 Guwol-ro, Namdong-gu, Incheon, Korea",
+    "support": "Support",
+    "contact": "Phone",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}

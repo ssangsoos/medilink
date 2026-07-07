@@ -1,0 +1,44 @@
+{
+  "common": {
+    "appName": "Medinoti"
+  },
+  "landing": {
+    "tagline": "의료인 구인구직의 새로운 기준",
+    "hospitalSignup": "병원 회원가입",
+    "hospitalSignupDesc": "인재를 찾고 계신가요?",
+    "workerSignup": "의료인 회원가입",
+    "workerSignupDesc": "좋은 일자리를 찾고 계신가요?",
+    "login": "로그인",
+    "loginDesc": "이미 계정이 있나요?",
+    "loginAction": "로그인하기"
+  },
+  "login": {
+    "title": "Medinoti 로그인",
+    "subtitle": "의료와 나를 잇다, Medinoti",
+    "email": "이메일",
+    "password": "비밀번호",
+    "submit": "로그인하기",
+    "submitting": "로그인 중...",
+    "noAccount": "계정이 없으신가요?",
+    "goSignup": "회원가입 하러 가기",
+    "errEmailNotConfirmed": "이메일 인증이 완료되지 않았습니다.\n\n가입 시 받으신 인증 메일의 링크를 클릭하신 뒤 다시 로그인해주세요.\n메일이 보이지 않으면 스팸함도 확인해주세요.",
+    "errLoginFailPrefix": "로그인 실패: "
+  },
+  "footer": {
+    "brand": "메디노티 (Medinoti)",
+    "descriptionLine1": "병원과 의료인을 가장 빠르고 확실하게 연결하는 지도 기반 매칭 플랫폼",
+    "descriptionLine2": "(치과위생사, 간호사, 간호조무사 구인구직)",
+    "company": "상호명",
+    "companyValue": "주식회사 스마일업",
+    "ceo": "대표자",
+    "ceoValue": "안상수",
+    "bizNo": "사업자등록번호",
+    "salesNo": "통신판매업신고",
+    "address": "주소",
+    "addressValue": "인천 남동구 구월로 247 스마일업사무실",
+    "support": "고객센터",
+    "contact": "연락처",
+    "privacy": "개인정보처리방침",
+    "terms": "이용약관"
+  }
+}
