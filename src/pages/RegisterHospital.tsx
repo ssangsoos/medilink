@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 // MapPin 제거됨 (에러 수정 버전)
 import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import PrivacyConsent from '../components/PrivacyConsent'; 
+import PrivacyConsent from '../components/PrivacyConsent';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const libraries: ("places")[] = ["places"];
 const koreaBounds = { north: 38.63, south: 33.00, east: 132.00, west: 124.00 };
@@ -12,6 +14,7 @@ const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px'
 
 export default function RegisterHospital() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
@@ -34,10 +37,11 @@ export default function RegisterHospital() {
   const [employmentType, setEmploymentType] = useState('');
 
   const POSITION_OPTIONS = [
+    "치과위생사", "치과의사", "치과기공사",
     "간호사", "간호조무사", "물리치료사", "방사선사", "보건교육사",
     "수의사", "안경사", "약사", "언어재활사", "영양사",
     "위생사", "의무기록사", "의사", "의지보조기기사", "임상병리사",
-    "작업치료사", "조산사", "치과기공사", "치과위생사", "치과의사",
+    "작업치료사", "조산사",
     "코디네이터", "한약사", "한의사", "응급구조사(1급)", "응급구조사(2급)"
   ];
 
@@ -54,35 +58,35 @@ export default function RegisterHospital() {
   const onPlaceChanged = () => {
     if (autocomplete !== null) {
       const place = autocomplete.getPlace();
-      if (!place.geometry || !place.geometry.location) return; 
-      
+      if (!place.geometry || !place.geometry.location) return;
+
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
-      
+
       setLocation({ lat, lng });
       setHospitalName(place.name || '');
       setAddress(place.formatted_address || '');
       if (place.formatted_phone_number) setPhone(place.formatted_phone_number);
-      
+
       setIsMapVisible(true);
       setIsManualMode(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') e.preventDefault(); 
+    if (e.key === 'Enter') e.preventDefault();
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!agreeAll) {
-      alert("필수 약관에 모두 동의해주세요.");
+      alert(t('hospitalForm.errAgreeRequired'));
       return;
     }
 
     if (!email || !password || !hospitalName || !address) {
-      alert("병원 정보를 모두 입력해주세요.");
+      alert(t('hospitalForm.errFillAllRequired'));
       return;
     }
 
@@ -98,7 +102,7 @@ export default function RegisterHospital() {
       });
 
       if (authError) throw authError;
-      if (!authData.user) throw new Error("회원가입 실패");
+      if (!authData.user) throw new Error(t('hospitalForm.errSignupFailed'));
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -127,27 +131,19 @@ export default function RegisterHospital() {
       if (profileError) {
         console.error('Profile insert failed:', profileError.message);
         await supabase.auth.signOut();
-        alert(
-          '프로필 등록 중 오류가 발생했습니다.\n' +
-          '잠시 후 다시 시도해주시거나, 문제가 지속되면 고객센터로 문의해주세요.\n\n' +
-          `오류: ${profileError.message}`
-        );
+        alert(t('hospitalForm.errProfileInsertFailed', { message: profileError.message }));
         return;
       }
       if (authData.session) {
-        alert('가입이 완료되었습니다. 로그인 페이지에서 로그인해주세요.');
+        alert(t('hospitalForm.signupCompleteLoginPrompt'));
       } else {
-        alert(
-          `가입 신청이 완료되었습니다.\n\n` +
-          `${email} 주소로 인증 메일이 발송되었습니다.\n` +
-          `메일함(스팸함 포함)을 확인하시고 인증 링크를 클릭하셔야 로그인이 가능합니다.`
-        );
+        alert(t('hospitalForm.signupPendingEmailVerify', { email }));
       }
       navigate('/login');
 
     } catch (error: any) {
       console.error(error);
-      alert("오류: " + error.message);
+      alert(t('hospitalForm.errRegisterGenericPrefix') + error.message);
     } finally {
       setLoading(false);
     }
@@ -169,14 +165,14 @@ export default function RegisterHospital() {
           <div className="mx-auto h-14 w-14 bg-white/20 flex items-center justify-center rounded-full mb-4">
             <Building2 className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white">병원 회원가입</h2>
-          <p className="text-blue-100 mt-2">지도를 통해 정확한 위치를 등록하세요</p>
+          <h2 className="text-3xl font-extrabold text-white">{t('hospitalForm.registerTitle')}</h2>
+          <p className="text-blue-100 mt-2">{t('hospitalForm.registerSubtitle')}</p>
         </div>
 
-        <LoadScript 
-            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""} 
+        <LoadScript
+            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}
             libraries={libraries}
-            language="ko" 
+            language="ko"
             region="KR"
         >
           <form className="p-8 space-y-6" onSubmit={handleRegister} autoComplete="off">
@@ -187,21 +183,21 @@ export default function RegisterHospital() {
             <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-bold text-blue-900 flex items-center gap-1">
-                  {isManualMode ? <Edit size={16}/> : <Search size={16}/>} 
-                  {isManualMode ? "직접 입력 모드" : "병원 검색 (구글 맵)"}
+                  {isManualMode ? <Edit size={16}/> : <Search size={16}/>}
+                  {isManualMode ? t('hospitalForm.manualModeLabel') : t('hospitalForm.googleSearchLabel')}
                 </label>
                 <button type="button" onClick={toggleManualMode} className="text-xs text-blue-600 underline">
-                    {isManualMode ? "다시 검색하기" : "검색이 안 되나요?"}
+                    {isManualMode ? t('hospitalForm.searchAgain') : t('hospitalForm.searchNotWorking')}
                 </button>
               </div>
-              
+
               {!isManualMode ? (
                   <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ bounds: koreaBounds, componentRestrictions: { country: "kr" }, fields: ["geometry", "name", "formatted_address", "formatted_phone_number"] }}>
                     {/* ★ 수정 포인트: placeholder "예: 스마일업의원"으로 변경 */}
-                    <input type="text" placeholder="예: 스마일업의원" onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
+                    <input type="text" placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
                   </Autocomplete>
               ) : (
-                  <div className="text-sm text-gray-600 p-2 bg-white/50 rounded">병원을 찾을 수 없다면 직접 입력해주세요.</div>
+                  <div className="text-sm text-gray-600 p-2 bg-white/50 rounded">{t('hospitalForm.manualModeHelp')}</div>
               )}
 
               {isMapVisible && !isManualMode && (
@@ -215,46 +211,46 @@ export default function RegisterHospital() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">병원명</label>
-                <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl font-bold ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder="자동 입력됨" />
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.hospitalName')}</label>
+                <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl font-bold ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">주소</label>
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder="자동 입력됨" />
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.address')}</label>
+                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} />
               </div>
-              <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="상세 주소 (예: 3층)" />
-              
+              <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder={t('hospitalForm.detailAddressPlaceholderWithExample')} />
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">연락처</label>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="02-000-0000" />
+                  <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.phone')}</label>
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder={t('hospitalForm.phonePlaceholder')} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">병원 분류</label>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.hospitalType')}</label>
                   <select value={hospitalType} onChange={(e) => setHospitalType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white">
-                    <option value="">선택</option>
-                    <option value="animal">동물병원</option>
-                    <option value="pharmacy">약국</option>
-                    <option value="nursing">요양병원</option>
-                    <option value="medical">일반 의과 병의원</option>
-                    <option value="dental">치과 병의원</option>
-                    <option value="oriental">한방 병의원</option>
-                    <option value="other">기타</option>
+                    <option value="">{t('hospitalForm.selectOption')}</option>
+                    <option value="animal">{t('hospitalForm.typeAnimal')}</option>
+                    <option value="pharmacy">{t('hospitalForm.typePharmacy')}</option>
+                    <option value="nursing">{t('hospitalForm.typeNursing')}</option>
+                    <option value="medical">{t('hospitalForm.typeMedical')}</option>
+                    <option value="dental">{t('hospitalForm.typeDental')}</option>
+                    <option value="oriental">{t('hospitalForm.typeOriental')}</option>
+                    <option value="other">{t('hospitalForm.typeOther')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">휴대폰 번호 <span className="text-xs text-gray-500 font-normal">(선택, 문자 수신용)</span></label>
-                <input type="tel" value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="010-0000-0000" />
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.mobilePhone')} <span className="text-xs text-gray-500 font-normal">{t('hospitalForm.optionalSmsHint')}</span></label>
+                <input type="tel" value={mobilePhone} onChange={(e) => setMobilePhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder={t('hospitalForm.mobilePhonePlaceholder')} />
                 <p className="text-xs text-blue-600 mt-1 bg-blue-50 p-2 rounded">
-                  💡 휴대폰을 입력하면 의료인이 <b>바로 문자</b>로 연락할 수 있어 매칭이 빠릅니다. 국선(02/032 등)만 쓰시는 경우 비워두셔도 됩니다.
+                  💡 {t('hospitalForm.mobileHintPrefix')}<b>{t('hospitalForm.mobileHintBold')}</b>{t('hospitalForm.mobileHintSuffixRegister')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">사업자 등록번호</label>
-                <input type="text" value={businessNumber} onChange={(e) => setBusinessNumber(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder="000-00-00000" />
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.businessNumberFull')}</label>
+                <input type="text" value={businessNumber} onChange={(e) => setBusinessNumber(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder={t('hospitalForm.businessNumberPlaceholder')} />
               </div>
             </div>
 
@@ -263,7 +259,7 @@ export default function RegisterHospital() {
             {/* 구인 정보 */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-2">구하는 인력 (복수 선택 가능)</label>
+                <label className="block text-sm font-bold text-gray-900 mb-2">{t('hospitalForm.seekingPositionsLabel')}</label>
                 <div className="flex flex-wrap gap-2">
                   {POSITION_OPTIONS.map(pos => (
                     <button
@@ -276,7 +272,7 @@ export default function RegisterHospital() {
                           : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
                       }`}
                     >
-                      {pos}
+                      {t('licenseTypes.' + pos, { defaultValue: pos })}
                     </button>
                   ))}
                 </div>
@@ -284,19 +280,19 @@ export default function RegisterHospital() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">제시 시급 (선택)</label>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.offeredWageLabel')}</label>
                   <div className="relative flex items-center">
-                    <input type="number" value={offeredHourlyRate} onChange={(e) => setOfferedHourlyRate(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl text-right pr-8" placeholder="예: 15000" />
-                    <span className="absolute right-4 text-gray-500 font-bold">원</span>
+                    <input type="number" value={offeredHourlyRate} onChange={(e) => setOfferedHourlyRate(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl text-right pr-8" placeholder={t('hospitalForm.wagePlaceholderExample')} />
+                    <span className="absolute right-4 text-gray-500 font-bold">{t('hospitalForm.won')}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">고용 형태 (선택)</label>
+                  <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.employmentTypeLabel')}</label>
                   <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white">
-                    <option value="">선택</option>
-                    <option value="정규직">정규직</option>
-                    <option value="아르바이트">아르바이트</option>
-                    <option value="계약직">계약직</option>
+                    <option value="">{t('hospitalForm.selectOption')}</option>
+                    <option value="정규직">{t('hospitalForm.employmentFulltime')}</option>
+                    <option value="아르바이트">{t('hospitalForm.employmentPartTime')}</option>
+                    <option value="계약직">{t('hospitalForm.employmentContract')}</option>
                   </select>
                 </div>
               </div>
@@ -306,11 +302,11 @@ export default function RegisterHospital() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">아이디 (이메일)</label>
-                <input type="text" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" name="register-hospital-email" className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="hospital@example.com" />
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.emailIdLabel')}</label>
+                <input type="text" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" name="register-hospital-email" className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder={t('hospitalForm.emailPlaceholder')} />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-1">비밀번호</label>
+                <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.password')}</label>
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" name="register-hospital-pw" className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none" placeholder="••••••••" />
               </div>
             </div>
@@ -318,13 +314,14 @@ export default function RegisterHospital() {
             <PrivacyConsent onValidChange={setAgreeAll} />
 
             <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-shadow shadow-lg disabled:bg-gray-400 mt-4">
-              {loading ? '가입 처리 중...' : '병원 가입 완료하기'}
+              {loading ? t('hospitalForm.registerSubmitting') : t('hospitalForm.registerSubmit')}
             </button>
-            
-            <div className="text-center pt-2">
+
+            <div className="pt-2 flex items-center justify-between">
               <Link to="/" className="text-gray-500 hover:text-gray-900 font-medium inline-flex items-center gap-1">
-                <ArrowLeft size={16} /> 첫 화면으로 돌아가기
+                <ArrowLeft size={16} /> {t('hospitalForm.backToHome')}
               </Link>
+              <LanguageSwitcher />
             </div>
           </form>
         </LoadScript>
