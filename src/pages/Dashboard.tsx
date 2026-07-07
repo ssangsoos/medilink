@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { LogOut, Search, MessageCircle, Edit, Filter, X, Lock, MapPin, Briefcase, Calendar, Infinity as InfinityIcon } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from '../lib/medicalConstants';
@@ -68,6 +70,7 @@ const maskAddress = (address: string) => {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -167,7 +170,7 @@ export default function Dashboard() {
       if (error) throw error;
       
     } catch (error) {
-      alert('상태 변경 실패');
+      alert(t('dashboard.statusChangeFailed'));
       setIsExposed(!isExposed);
     }
   };
@@ -191,7 +194,7 @@ export default function Dashboard() {
   });
 
   const getSmsHref = (phone: string) => {
-    const message = "안녕하세요, 메디노티를 보고 연락드립니다.";
+    const message = t('dashboard.smsMessage');
     return `sms:${safeTelDigits(phone)}?body=${encodeURIComponent(message)}`;
   };
 
@@ -253,14 +256,14 @@ export default function Dashboard() {
     return d > item.work_radius;
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">{t('dashboard.loading')}</div>;
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       <nav className="bg-white shadow-sm px-4 py-3 md:px-6 md:py-4 flex justify-between items-center z-20 relative">
         <div className="flex items-center gap-2">
             <h1 className="text-lg md:text-xl font-bold text-gray-800">
-            {userRole === 'hospital' ? '인재 찾기' : '병원 찾기'}
+            {userRole === 'hospital' ? t('dashboard.findTalent') : t('dashboard.findHospital')}
             </h1>
             
             <button 
@@ -268,27 +271,28 @@ export default function Dashboard() {
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold border transition-colors ${showFilter || selectedFilters.length > 0 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
             >
                 <Filter size={16} />
-                필터 {selectedFilters.length > 0 && <span className="ml-1 bg-white text-blue-600 rounded-full px-1.5 text-xs">{selectedFilters.length}</span>}
+                {t('dashboard.filter')} {selectedFilters.length > 0 && <span className="ml-1 bg-white text-blue-600 rounded-full px-1.5 text-xs">{selectedFilters.length}</span>}
             </button>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <LanguageSwitcher className="hidden md:inline-flex mr-1" />
           {userRole === 'hospital' ? (
             <>
               <button onClick={() => navigate('/hospital/jobs')} className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition-colors text-sm md:text-base shadow-sm">
-                <Briefcase size={16} /> <span className="hidden md:inline">내 공고</span>
+                <Briefcase size={16} /> <span className="hidden md:inline">{t('dashboard.myJobs')}</span>
               </button>
               <button onClick={() => navigate('/hospital/edit')} className="flex items-center gap-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-bold transition-colors text-sm md:text-base">
-                <Edit size={16} /> <span className="hidden md:inline">정보수정</span>
+                <Edit size={16} /> <span className="hidden md:inline">{t('dashboard.editInfo')}</span>
               </button>
             </>
           ) : (
              <button onClick={() => navigate('/worker/profile')} className="flex items-center gap-1 px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 font-bold transition-colors text-sm md:text-base">
-               <Edit size={16} /> <span className="hidden md:inline">정보수정</span>
+               <Edit size={16} /> <span className="hidden md:inline">{t('dashboard.editInfo')}</span>
              </button>
           )}
           <button onClick={handleLogout} className="flex items-center gap-1 px-3 py-2 text-gray-500 hover:text-red-500 transition-colors font-medium text-sm md:text-base">
-            <LogOut size={16} /> <span className="hidden md:inline">로그아웃</span>
+            <LogOut size={16} /> <span className="hidden md:inline">{t('dashboard.logout')}</span>
           </button>
         </div>
       </nav>
@@ -298,7 +302,7 @@ export default function Dashboard() {
               <div className="max-w-4xl mx-auto">
                   <div className="flex flex-wrap gap-2 mb-2">
                       <div className="text-sm font-bold text-gray-500 flex items-center mr-2 pt-1">
-                          보고 싶은 {userRole === 'hospital' ? '직종' : '병원'} 선택:
+                          {userRole === 'hospital' ? t('dashboard.selectJobType') : t('dashboard.selectHospitalType')}
                       </div>
                       
                       {userRole === 'hospital' ? (
@@ -325,7 +329,7 @@ export default function Dashboard() {
 
                       {selectedFilters.length > 0 && (
                           <button onClick={() => setSelectedFilters([])} className="ml-auto text-xs text-gray-400 underline hover:text-gray-600 flex items-center gap-1">
-                              <X size={12}/> 초기화
+                              <X size={12}/> {t('dashboard.reset')}
                           </button>
                       )}
                   </div>
@@ -338,10 +342,10 @@ export default function Dashboard() {
         <div className="w-80 bg-white shadow-lg z-10 flex flex-col hidden md:flex">
           <div className="p-6 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-800">
-              <span className={userRole === 'hospital' ? 'text-blue-600' : 'text-purple-600'}>{userName}</span>님 주변
+              <span className={userRole === 'hospital' ? 'text-blue-600' : 'text-purple-600'}>{userName}</span>{t('dashboard.aroundNameSuffix')}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-               총 {filteredItems.length}개의 결과가 있습니다.
+               {t('dashboard.resultCount', { n: filteredItems.length })}
             </p>
           </div>
 
@@ -353,8 +357,8 @@ export default function Dashboard() {
                       <Search className={isExposed ? 'text-purple-600' : 'text-gray-400'} size={20} />
                     </div>
                     <div>
-                      <h2 className="text-sm font-bold text-gray-900">내 이력서 공개</h2>
-                      <p className="text-xs text-gray-500">{isExposed ? "공개 중" : "비공개"}</p>
+                      <h2 className="text-sm font-bold text-gray-900">{t('dashboard.myResumeExposure')}</h2>
+                      <p className="text-xs text-gray-500">{isExposed ? t('dashboard.exposed') : t('dashboard.hidden')}</p>
                     </div>
                   </div>
                   <button 
@@ -366,7 +370,7 @@ export default function Dashboard() {
                 </div>
                 
                 <button onClick={() => navigate('/worker/profile')} className="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-bold text-sm hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors">
-                  <Edit size={14} /> 이력서 내용 수정하기
+                  <Edit size={14} /> {t('dashboard.editResume')}
                 </button>
             </div>
           )}
@@ -385,8 +389,8 @@ export default function Dashboard() {
                  <div className="flex justify-between items-start">
                     <div className="font-bold text-gray-800">{item.name || item.hospital_name}</div>
                     <div className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded text-gray-500">
-                        {userRole === 'hospital' ? item.license_type : 
-                            (HOSPITAL_TYPES.find(t => t.value === item.hospital_type)?.label || '기타')}
+                        {userRole === 'hospital' ? item.license_type :
+                            (HOSPITAL_TYPES.find(ht => ht.value === item.hospital_type)?.label || t('dashboard.etc'))}
                     </div>
                  </div>
                  {/* ★ 목록에도 주소 필터 적용 (getDisplayAddress 사용) */}
@@ -396,7 +400,7 @@ export default function Dashboard() {
                  {userRole === 'worker' && (jobsByHospital.get(item.id)?.length ?? 0) > 0 && (
                    <div className="mt-2 inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">
                      <Briefcase size={11} />
-                     공고 {jobsByHospital.get(item.id)!.length}건
+                     {t('dashboard.jobCountBadge', { n: jobsByHospital.get(item.id)!.length })}
                    </div>
                  )}
                  {userRole === 'worker' && item.seeking_positions?.length > 0 && (
@@ -410,7 +414,7 @@ export default function Dashboard() {
              ))}
              {filteredItems.length === 0 && (
                  <div className="text-center text-gray-400 py-10">
-                     조건에 맞는 결과가 없습니다.
+                     {t('dashboard.noResults')}
                  </div>
              )}
           </div>
@@ -425,16 +429,16 @@ export default function Dashboard() {
                 <div className="flex items-center justify-center gap-2.5 text-xs text-gray-700">
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-red-500 inline-block shrink-0"></span>
-                    출퇴근 가능 거리 안
+                    {t('dashboard.withinRange')}
                   </span>
                   <span className="text-gray-300">·</span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-purple-500 inline-block shrink-0"></span>
-                    거리 밖
+                    {t('dashboard.outOfRangeShort')}
                   </span>
                 </div>
                 <p className="text-[10px] text-gray-400 text-center mt-0.5">
-                  인재가 설정한 출퇴근 가능 거리를 기준으로 표시됩니다.
+                  {t('dashboard.rangeLegend')}
                 </p>
               </div>
             </div>
@@ -448,7 +452,7 @@ export default function Dashboard() {
             >
               <Marker 
                 position={myLocation} 
-                label="나"
+                label={t('dashboard.me')}
                 icon={{
                     url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
                 }}
@@ -481,14 +485,14 @@ export default function Dashboard() {
                       if (outOfRange && distKm != null) {
                         return (
                           <div className="mt-2 mb-2 bg-amber-50 border-l-4 border-amber-400 px-2 py-1.5 text-xs text-amber-900 rounded-r">
-                            ⚠️ 이 의료인의 출퇴근 반경({selectedPin.work_radius}km)을 벗어났습니다 · {formatDistance(distKm)}
+                            {t('dashboard.outOfRangeWarning', { radius: selectedPin.work_radius, distance: formatDistance(distKm) })}
                           </div>
                         );
                       }
                       if (userRole === 'hospital' && selectedPin.license_type && distKm != null) {
                         return (
                           <div className="text-xs text-gray-500 mb-1">
-                            대략 거리 · {formatDistance(distKm)}
+                            {t('dashboard.approxDistance', { distance: formatDistance(distKm) })}
                           </div>
                         );
                       }
@@ -502,11 +506,11 @@ export default function Dashboard() {
                     {getEffectiveMobile(selectedPin) && (
                       <div className="flex items-center gap-1 text-gray-700 text-sm mb-1">
                           📱 {maskPhoneNumber(getEffectiveMobile(selectedPin))}
-                          <span className="text-xs text-blue-600 font-bold ml-1">문자 수신</span>
+                          <span className="text-xs text-blue-600 font-bold ml-1">{t('dashboard.smsReceive')}</span>
                       </div>
                     )}
                     <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                        <Lock size={10} /> 개인정보 보호를 위해 번호가 가려집니다.
+                        <Lock size={10} /> {t('dashboard.numberMasked')}
                     </div>
 
                     {/* ★ 팝업 주소 필터 적용 (getDisplayAddress 사용) */}
@@ -523,23 +527,23 @@ export default function Dashboard() {
                                 </div>
                             )}
                             <div className="space-y-1 mb-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                                <div><span className="font-bold text-gray-900">면허:</span> {selectedPin.license_type}</div>
-                                <div className="whitespace-pre-line"><span className="font-bold text-gray-900">경력:</span> {selectedPin.experience}</div>
-                                <div><span className="font-bold text-gray-900">희망시급:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}원</div>
+                                <div><span className="font-bold text-gray-900">{t('dashboard.license')}:</span> {selectedPin.license_type}</div>
+                                <div className="whitespace-pre-line"><span className="font-bold text-gray-900">{t('dashboard.experience')}:</span> {selectedPin.experience}</div>
+                                <div><span className="font-bold text-gray-900">{t('dashboard.desiredWage')}:</span> {Number(selectedPin.desired_hourly_rate).toLocaleString()}{t('dashboard.wonSuffix')}</div>
                                 {selectedPin.available_from && (
-                                    <div><span className="font-bold text-gray-900">즉시 가능:</span> {formatAvailableFrom(selectedPin.available_from)}</div>
+                                    <div><span className="font-bold text-gray-900">{t('dashboard.availableFromLabel')}:</span> {formatAvailableFrom(selectedPin.available_from)}</div>
                                 )}
                             </div>
                             {(selectedPin.work_pattern?.length || selectedPin.available_days?.length || selectedPin.available_times?.length) ? (
                                 <div className="space-y-1 mb-4 text-xs text-gray-700 bg-purple-50/60 border border-purple-100 p-2 rounded">
                                     {selectedPin.work_pattern?.length > 0 && (
-                                        <div><span className="font-bold text-purple-900">근무 형태:</span> {formatFromOptions(selectedPin.work_pattern, WORK_PATTERN_OPTIONS)}</div>
+                                        <div><span className="font-bold text-purple-900">{t('dashboard.workPattern')}:</span> {formatFromOptions(selectedPin.work_pattern, WORK_PATTERN_OPTIONS)}</div>
                                     )}
                                     {selectedPin.available_days?.length > 0 && (
-                                        <div><span className="font-bold text-purple-900">가능 요일:</span> {formatFromOptions(selectedPin.available_days, AVAILABLE_DAYS_OPTIONS)}</div>
+                                        <div><span className="font-bold text-purple-900">{t('dashboard.availableDaysLabel')}:</span> {formatFromOptions(selectedPin.available_days, AVAILABLE_DAYS_OPTIONS)}</div>
                                     )}
                                     {selectedPin.available_times?.length > 0 && (
-                                        <div><span className="font-bold text-purple-900">시간대:</span> {formatFromOptions(selectedPin.available_times, AVAILABLE_TIMES_OPTIONS)}</div>
+                                        <div><span className="font-bold text-purple-900">{t('dashboard.availableTimesLabel')}:</span> {formatFromOptions(selectedPin.available_times, AVAILABLE_TIMES_OPTIONS)}</div>
                                     )}
                                 </div>
                             ) : null}
@@ -547,32 +551,32 @@ export default function Dashboard() {
                     ) : (
                         <>
                             <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded mb-3">
-                                <span className="font-bold text-gray-900">분류:</span> {HOSPITAL_TYPES.find(t => t.value === selectedPin.hospital_type)?.label || '기타'}
+                                <span className="font-bold text-gray-900">{t('dashboard.category')}:</span> {HOSPITAL_TYPES.find(ht => ht.value === selectedPin.hospital_type)?.label || t('dashboard.etc')}
                             </div>
 
                             {/* 병원이 올린 공고 목록 */}
                             <div className="mb-3">
                                 <div className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1">
                                     <Briefcase size={12} />
-                                    등록된 공고
+                                    {t('dashboard.registeredJobs')}
                                     {(jobsByHospital.get(selectedPin.id)?.length ?? 0) > 0 && (
-                                        <span>({jobsByHospital.get(selectedPin.id)!.length}건)</span>
+                                        <span>{t('dashboard.jobCountParen', { n: jobsByHospital.get(selectedPin.id)!.length })}</span>
                                     )}
                                 </div>
                                 {(jobsByHospital.get(selectedPin.id)?.length ?? 0) === 0 ? (
                                     <>
-                                        <div className="text-xs text-gray-400 py-2">현재 등록된 공고가 없습니다.</div>
+                                        <div className="text-xs text-gray-400 py-2">{t('dashboard.noJobs')}</div>
                                         {(selectedPin.seeking_positions?.length > 0 || selectedPin.offered_hourly_rate || selectedPin.employment_type) && (
                                             <div className="space-y-1 text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
-                                                <div className="font-bold text-gray-700 text-[10px] mb-1">병원 프로필 기본 희망 조건</div>
+                                                <div className="font-bold text-gray-700 text-[10px] mb-1">{t('dashboard.defaultConditions')}</div>
                                                 {selectedPin.seeking_positions?.length > 0 && (
-                                                    <div><span className="font-bold">구인:</span> {selectedPin.seeking_positions.join(', ')}</div>
+                                                    <div><span className="font-bold">{t('dashboard.seeking')}:</span> {selectedPin.seeking_positions.join(', ')}</div>
                                                 )}
                                                 {selectedPin.offered_hourly_rate && (
-                                                    <div><span className="font-bold">제시 시급:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}원</div>
+                                                    <div><span className="font-bold">{t('dashboard.offeredWage')}:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}{t('dashboard.wonSuffix')}</div>
                                                 )}
                                                 {selectedPin.employment_type && (
-                                                    <div><span className="font-bold">고용 형태:</span> {selectedPin.employment_type}</div>
+                                                    <div><span className="font-bold">{t('dashboard.employmentTypeLabel')}:</span> {selectedPin.employment_type}</div>
                                                 )}
                                             </div>
                                         )}
@@ -608,14 +612,14 @@ export default function Dashboard() {
                                                             href={getSmsHref(jobSmsPhone)}
                                                             className="block text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 rounded transition-colors flex items-center justify-center gap-1"
                                                         >
-                                                            <MessageCircle size={12} /> 문자 보내기
+                                                            <MessageCircle size={12} /> {t('dashboard.sendSms')}
                                                             {job.contact_phone && (
-                                                                <span className="text-[10px] font-normal opacity-80">(공고 전용)</span>
+                                                                <span className="text-[10px] font-normal opacity-80">{t('dashboard.jobSpecific')}</span>
                                                             )}
                                                         </a>
                                                     ) : (
                                                         <div className="block text-center bg-gray-100 text-gray-400 text-xs font-bold py-1.5 rounded border border-gray-200">
-                                                            문자 수신 번호 미등록
+                                                            {t('dashboard.noSmsNumber')}
                                                         </div>
                                                     )}
                                                     {(() => {
@@ -628,7 +632,7 @@ export default function Dashboard() {
                                                                 rel="noreferrer"
                                                                 className="block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
                                                             >
-                                                                💬 카카오톡 문의
+                                                                {t('dashboard.kakaoInquiry')}
                                                             </a>
                                                         ) : null;
                                                     })()}
@@ -645,7 +649,7 @@ export default function Dashboard() {
                     {userRole === 'worker' && !getEffectiveMobile(selectedPin) ? (
                       <div className="block w-full py-3 px-4 rounded-xl bg-gray-100 text-gray-400 font-bold text-center flex items-center justify-center gap-2 border border-gray-200">
                         <MessageCircle size={18} />
-                        문자 수신 번호 미등록
+                        {t('dashboard.noSmsNumber')}
                       </div>
                     ) : (
                       <a
@@ -653,14 +657,14 @@ export default function Dashboard() {
                         className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
                         <MessageCircle size={18} />
-                        문자 보내기
+                        {t('dashboard.sendSms')}
                       </a>
                     )}
 
                     <p className="text-xs text-gray-400 text-center mt-2">
                       {userRole === 'worker' && !getEffectiveMobile(selectedPin)
-                        ? '* 이 병원은 문자 수신 번호 미등록. 위 공고의 카카오톡 문의를 이용해주세요.'
-                        : '* 모바일 환경에서 문자를 보낼 수 있습니다.'}
+                        ? t('dashboard.noSmsHelpKakao')
+                        : t('dashboard.smsMobileHelp')}
                     </p>
                   </div>
                 </InfoWindow>
@@ -675,7 +679,7 @@ export default function Dashboard() {
                 className={`flex items-center gap-2 px-6 py-3 rounded-full shadow-xl font-bold text-white transition-all ${isExposed ? 'bg-purple-600' : 'bg-gray-500'}`}
                >
                  <Search size={20} />
-                 {isExposed ? '구직 중 (노출 됨)' : '구직 비공개 (노출 안 됨)'}
+                 {isExposed ? t('dashboard.seekingExposed') : t('dashboard.seekingHidden')}
                </button>
             </div>
           )}
