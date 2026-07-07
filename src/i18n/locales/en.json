@@ -131,5 +131,41 @@
     "한의사": "Korean Medicine Doctor",
     "응급구조사(1급)": "Emergency Medical Technician (Level 1)",
     "응급구조사(2급)": "Emergency Medical Technician (Level 2)"
+  },
+  "distance": {
+    "within1km": "Within 1km",
+    "about2km": "About 2km",
+    "about5km": "About 5km",
+    "about10km": "About 10km",
+    "about20km": "About 20km",
+    "about30km": "About 30km",
+    "about50km": "About 50km",
+    "over70km": "Over 70km"
+  },
+  "options": {
+    "now": "From today",
+    "1week": "Within 1 week",
+    "2weeks": "In 2 weeks",
+    "flexible": "Flexible",
+    "one_off": "One-off / Sub",
+    "regular": "Regular",
+    "fulltime": "Full-time track",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun",
+    "morning": "Morning",
+    "afternoon": "Afternoon",
+    "evening": "Evening"
+  },
+  "job": {
+    "negotiable": "Negotiable",
+    "undecidedWage": "TBD",
+    "always": "Always hiring",
+    "undecidedSchedule": "Schedule TBD",
+    "unspecifiedCategory": "Not specified"
   }
 }

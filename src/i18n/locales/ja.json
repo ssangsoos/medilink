@@ -131,5 +131,41 @@
     "한의사": "韓医師",
     "응급구조사(1급)": "救急救命士(1級)",
     "응급구조사(2급)": "救急救命士(2級)"
+  },
+  "distance": {
+    "within1km": "1km以内",
+    "about2km": "約2km",
+    "about5km": "約5km",
+    "about10km": "約10km",
+    "about20km": "約20km",
+    "about30km": "約30km",
+    "about50km": "約50km",
+    "over70km": "70km以上"
+  },
+  "options": {
+    "now": "本日から",
+    "1week": "1週間以内",
+    "2weeks": "2週間後",
+    "flexible": "応相談",
+    "one_off": "単発・代打",
+    "regular": "定期勤務",
+    "fulltime": "フルタイム転換",
+    "mon": "月",
+    "tue": "火",
+    "wed": "水",
+    "thu": "木",
+    "fri": "金",
+    "sat": "土",
+    "sun": "日",
+    "morning": "午前",
+    "afternoon": "午後",
+    "evening": "夕方"
+  },
+  "job": {
+    "negotiable": "応相談",
+    "undecidedWage": "未定",
+    "always": "常時募集",
+    "undecidedSchedule": "日程未定",
+    "unspecifiedCategory": "職種未指定"
   }
 }

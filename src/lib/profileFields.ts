@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 // 즉시 출근 가능 시점 옵션
 export const AVAILABLE_FROM_OPTIONS = [
   { value: 'now', label: '오늘부터' },
@@ -12,7 +14,9 @@ export const BIO_MAX_LENGTH = 60;
 
 export const formatAvailableFrom = (value: string | null | undefined): string => {
   if (!value) return '';
-  return AVAILABLE_FROM_OPTIONS.find((o) => o.value === value)?.label ?? '';
+  const opt = AVAILABLE_FROM_OPTIONS.find((o) => o.value === value);
+  if (!opt) return '';
+  return i18n.t('options.' + value, { defaultValue: opt.label });
 };
 
 // 근무 형태 (다중 선택)
@@ -48,7 +52,10 @@ export const formatFromOptions = (
 ): string => {
   if (!values || values.length === 0) return '';
   return values
-    .map((v) => options.find((o) => o.value === v)?.label)
+    .map((v) => {
+      const opt = options.find((o) => o.value === v);
+      return opt ? i18n.t('options.' + v, { defaultValue: opt.label }) : null;
+    })
     .filter(Boolean)
     .join(', ');
 };

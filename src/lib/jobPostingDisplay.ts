@@ -1,15 +1,16 @@
 import type { JobPosting } from '../types/jobPosting';
 import { JOB_CATEGORY_OTHER } from './medicalConstants';
+import i18n from '../i18n';
 
 export const formatHourlyRate = (job: JobPosting): string => {
-  if (job.wage_negotiable) return '협의 가능';
-  if (job.hourly_rate == null) return '미정';
-  return `${Number(job.hourly_rate).toLocaleString()}원`;
+  if (job.wage_negotiable) return i18n.t('job.negotiable');
+  if (job.hourly_rate == null) return i18n.t('job.undecidedWage');
+  return `${Number(job.hourly_rate).toLocaleString()}${i18n.t('dashboard.wonSuffix')}`;
 };
 
 export const formatSchedule = (job: JobPosting): string => {
-  if (job.schedule_type === 'always') return '항시 구인';
-  if (!job.work_start_date) return '일정 미정';
+  if (job.schedule_type === 'always') return i18n.t('job.always');
+  if (!job.work_start_date) return i18n.t('job.undecidedSchedule');
   const range = job.work_end_date && job.work_end_date !== job.work_start_date
     ? `${job.work_start_date} ~ ${job.work_end_date}`
     : job.work_start_date;
@@ -20,9 +21,9 @@ export const formatSchedule = (job: JobPosting): string => {
 };
 
 export const formatJobCategory = (job: JobPosting): string => {
-  if (!job.job_category) return '직종 미지정';
+  if (!job.job_category) return i18n.t('job.unspecifiedCategory');
   if (job.job_category === JOB_CATEGORY_OTHER && job.job_category_custom) {
     return job.job_category_custom;
   }
-  return job.job_category;
+  return i18n.t('licenseTypes.' + job.job_category, { defaultValue: job.job_category });
 };

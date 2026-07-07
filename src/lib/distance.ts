@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 // 두 좌표 사이 거리(km) - Haversine
 export const haversineKm = (
   lat1: number,
@@ -40,16 +42,16 @@ export const jitterCoords = (
   return { lat: lat + dLat, lon: lon + dLon };
 };
 
-// 거리를 단계적으로 표시 (정확한 거리 노출 방지)
+// 거리를 단계적으로 표시 (정확한 거리 노출 방지). 언어별 라벨은 i18n에서 조회.
 export const formatDistance = (km: number): string => {
-  if (km < 1) return '1km 이내';
-  if (km < 3) return '약 2km';
-  if (km < 7) return '약 5km';
-  if (km < 15) return '약 10km';
-  if (km < 25) return '약 20km';
-  if (km < 40) return '약 30km';
-  if (km < 70) return '약 50km';
-  return '70km 이상';
+  if (km < 1) return i18n.t('distance.within1km');
+  if (km < 3) return i18n.t('distance.about2km');
+  if (km < 7) return i18n.t('distance.about5km');
+  if (km < 15) return i18n.t('distance.about10km');
+  if (km < 25) return i18n.t('distance.about20km');
+  if (km < 40) return i18n.t('distance.about30km');
+  if (km < 70) return i18n.t('distance.about50km');
+  return i18n.t('distance.over70km');
 };
 
 // 반경 옵션 (NULL = 제한 없음)

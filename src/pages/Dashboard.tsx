@@ -407,7 +407,7 @@ export default function Dashboard() {
                  {userRole === 'worker' && item.seeking_positions?.length > 0 && (
                    <div className="flex flex-wrap gap-1 mt-2">
                      {item.seeking_positions.map((pos: string) => (
-                       <span key={pos} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{pos}</span>
+                       <span key={pos} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{t('licenseTypes.' + pos, { defaultValue: pos })}</span>
                      ))}
                    </div>
                  )}
@@ -571,7 +571,7 @@ export default function Dashboard() {
                                             <div className="space-y-1 text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">
                                                 <div className="font-bold text-gray-700 text-[10px] mb-1">{t('dashboard.defaultConditions')}</div>
                                                 {selectedPin.seeking_positions?.length > 0 && (
-                                                    <div><span className="font-bold">{t('dashboard.seeking')}:</span> {selectedPin.seeking_positions.join(', ')}</div>
+                                                    <div><span className="font-bold">{t('dashboard.seeking')}:</span> {selectedPin.seeking_positions.map((p: string) => t('licenseTypes.' + p, { defaultValue: p })).join(', ')}</div>
                                                 )}
                                                 {selectedPin.offered_hourly_rate && (
                                                     <div><span className="font-bold">{t('dashboard.offeredWage')}:</span> {Number(selectedPin.offered_hourly_rate).toLocaleString()}{t('dashboard.wonSuffix')}</div>
