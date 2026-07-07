@@ -125,7 +125,7 @@ export default function RegisterHospital() {
         ]);
 
       if (profileError) {
-        console.error('Profile insert failed for', authData.user.id, profileError);
+        console.error('Profile insert failed:', profileError.message);
         await supabase.auth.signOut();
         alert(
           '프로필 등록 중 오류가 발생했습니다.\n' +

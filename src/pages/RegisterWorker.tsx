@@ -74,8 +74,11 @@ export default function RegisterWorker() {
       if (authError) throw authError;
       if (!authData.user) throw new Error("회원가입 실패");
 
-      // 주소를 좌표로 변환
-      let lat = 0, lng = 0;
+      // 주소를 좌표로 변환. 실패 시 (0,0) 대신 null 저장 —
+      // (0,0)은 지도에서 아프리카 앞바다에 마커를 찍으므로, 못 찾으면 아예 비워둔다.
+      // 뷰(public_profiles)는 좌표 없는 회원을 지도에서 제외하고, 이후 프로필 수정에서 보정 가능.
+      let lat: number | null = null;
+      let lng: number | null = null;
       if (address) {
         const coords = await getCoordinates(address);
         if (coords) {
@@ -110,7 +113,7 @@ export default function RegisterWorker() {
         ]);
 
       if (profileError) {
-        console.error('Profile insert failed for', authData.user.id, profileError);
+        console.error('Profile insert failed:', profileError.message);
         await supabase.auth.signOut();
         alert(
           '프로필 등록 중 오류가 발생했습니다.\n' +
