@@ -32,6 +32,19 @@ export const detectLanguage = (): string => {
   return 'ko';
 };
 
+// 구글맵 라벨 언어. 앱 언어(ko/en/ja)를 그대로 쓰고, 그 외에는 영어로.
+// 일본 접속=일본어 지도, 그 밖(영어 UI)=영어 지도, 한국=한국어 지도.
+export const getMapLanguage = (): 'ko' | 'en' | 'ja' => {
+  const base = (i18n.language || 'ko').split('-')[0];
+  return base === 'ja' ? 'ja' : base === 'ko' ? 'ko' : 'en';
+};
+
+// 지도 지역(region) 바이어스도 언어에 맞춘다. 좌표는 모두 한국이므로 표시엔 영향 적으나 일관성 유지.
+export const getMapRegion = (): 'KR' | 'JP' | 'US' => {
+  const lang = getMapLanguage();
+  return lang === 'ja' ? 'JP' : lang === 'en' ? 'US' : 'KR';
+};
+
 i18n.use(initReactI18next).init({
   resources: {
     ko: { translation: ko },

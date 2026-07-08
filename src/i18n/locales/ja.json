@@ -1,6 +1,7 @@
 {
   "common": {
-    "appName": "Medinoti"
+    "appName": "Medinoti",
+    "checking": "確認中..."
   },
   "landing": {
     "tagline": "医療従事者の求人・求職の新しい基準",

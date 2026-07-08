@@ -5,6 +5,7 @@ import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { getMapLanguage, getMapRegion } from '../i18n';
 import PrivacyConsent from '../components/PrivacyConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -172,8 +173,8 @@ export default function RegisterHospital() {
         <LoadScript
             googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}
             libraries={libraries}
-            language="ko"
-            region="KR"
+            language={getMapLanguage()}
+            region={getMapRegion()}
         >
           <form className="p-8 space-y-6" onSubmit={handleRegister} autoComplete="off">
             {/* Chrome 자동완성 흡수용 더미 필드 */}

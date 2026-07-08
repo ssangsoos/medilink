@@ -10,6 +10,7 @@ import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 import { haversineKm, formatDistance } from '../lib/distance';
 import { safeHttpUrl, safeTelDigits } from '../lib/sanitize';
+import { getMapLanguage, getMapRegion } from '../i18n';
 import {
   formatAvailableFrom,
   formatFromOptions,
@@ -444,7 +445,11 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}>
+          <LoadScript
+            googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}
+            language={getMapLanguage()}
+            region={getMapRegion()}
+          >
             <GoogleMap
               mapContainerStyle={containerStyle}
               center={myLocation}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 // 라우트 접근 가드: 로그인 여부 + 역할(role) 일치를 확인한다.
@@ -18,6 +19,7 @@ export default function RouteGuard({
   allow: AllowedRole;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<GuardState>('loading');
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function RouteGuard({
   if (state === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
-        확인 중...
+        {t('common.checking', { defaultValue: '확인 중...' })}
       </div>
     );
   }

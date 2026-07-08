@@ -1,6 +1,7 @@
 {
   "common": {
-    "appName": "Medinoti"
+    "appName": "Medinoti",
+    "checking": "확인 중..."
   },
   "landing": {
     "tagline": "의료인 구인구직의 새로운 기준",
