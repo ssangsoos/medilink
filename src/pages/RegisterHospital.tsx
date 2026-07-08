@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 // MapPin 제거됨 (에러 수정 버전)
 import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { trackEvent } from '../lib/analytics';
 import PrivacyConsent from '../components/PrivacyConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -15,6 +16,10 @@ const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px'
 export default function RegisterHospital() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // 퍼널: 병원 가입 시작(페이지 진입)
+  useEffect(() => { trackEvent('signup_start', { side: 'hospital' }); }, []);
+
   const [loading, setLoading] = useState(false);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
@@ -134,6 +139,7 @@ export default function RegisterHospital() {
         alert(t('hospitalForm.errProfileInsertFailed', { message: profileError.message }));
         return;
       }
+      trackEvent('signup_complete', { side: 'hospital' });
       if (authData.session) {
         alert(t('hospitalForm.signupCompleteLoginPrompt'));
       } else {

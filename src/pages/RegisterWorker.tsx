@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info, MapPin, Clock, Sparkles, Calendar, Sun } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { trackEvent } from '../lib/analytics';
 import { getCoordinates } from '../lib/geocode';
 import PrivacyConsent from '../components/PrivacyConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -22,6 +23,9 @@ export default function RegisterWorker() {
   const navigate = useNavigate();
   const open = useDaumPostcodePopup();
   const { t } = useTranslation();
+
+  // 퍼널: 의료인 가입 시작(페이지 진입)
+  useEffect(() => { trackEvent('signup_start', { side: 'worker' }); }, []);
 
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -122,6 +126,7 @@ export default function RegisterWorker() {
         return;
       }
 
+      trackEvent('signup_complete', { side: 'worker' });
       if (authData.session) {
         alert(t('workerForm.signupCompleteWithSession'));
       } else {

@@ -10,6 +10,7 @@ import type { JobPosting } from '../types/jobPosting';
 import { formatHourlyRate, formatSchedule, formatJobCategory } from '../lib/jobPostingDisplay';
 import { haversineKm, formatDistance } from '../lib/distance';
 import { safeHttpUrl, safeTelDigits } from '../lib/sanitize';
+import { trackEvent } from '../lib/analytics';
 import {
   formatAvailableFrom,
   formatFromOptions,
@@ -611,6 +612,7 @@ export default function Dashboard() {
                                                     {jobSmsPhone ? (
                                                         <a
                                                             href={getSmsHref(jobSmsPhone)}
+                                                            onClick={() => trackEvent('contact_click', { channel: 'sms', context: 'job', role: userRole })}
                                                             className="block text-center bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 rounded transition-colors flex items-center justify-center gap-1"
                                                         >
                                                             <MessageCircle size={12} /> {t('dashboard.sendSms')}
@@ -631,6 +633,7 @@ export default function Dashboard() {
                                                                 href={safeKakao}
                                                                 target="_blank"
                                                                 rel="noreferrer"
+                                                                onClick={() => trackEvent('contact_click', { channel: 'kakao', context: 'job', role: userRole })}
                                                                 className="block text-center bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xs font-bold py-1.5 rounded transition-colors"
                                                             >
                                                                 {t('dashboard.kakaoInquiry')}
@@ -655,6 +658,7 @@ export default function Dashboard() {
                     ) : (
                       <a
                         href={getSmsHref(userRole === 'worker' ? getEffectiveMobile(selectedPin) : selectedPin.phone)}
+                        onClick={() => trackEvent('contact_click', { channel: 'sms', context: 'main', role: userRole })}
                         className={`block w-full py-3 px-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-md ${userRole === 'hospital' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
                         <MessageCircle size={18} />

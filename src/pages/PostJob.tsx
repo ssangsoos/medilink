@@ -6,6 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import { ArrowLeft, MessageCircle, Calendar, Infinity as InfinityIcon, Briefcase, Phone } from 'lucide-react';
 import { MEDICAL_LICENSE_TYPES, JOB_CATEGORY_OTHER } from '../lib/medicalConstants';
 import { safeHttpUrl } from '../lib/sanitize';
+import { trackEvent } from '../lib/analytics';
 import type { ScheduleType } from '../types/jobPosting';
 
 export default function PostJob() {
@@ -124,6 +125,7 @@ export default function PostJob() {
       const { error } = await supabase.from('job_postings').insert([payload]);
       if (error) throw error;
 
+      trackEvent('job_post');
       alert(t('jobForm.postSuccess'));
       navigate('/hospital/jobs');
     } catch (error: any) {
