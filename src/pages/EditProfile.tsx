@@ -8,6 +8,7 @@ import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield,
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
+import { MEDICAL_LICENSE_TYPES } from '../lib/medicalConstants';
 import {
   AVAILABLE_FROM_OPTIONS,
   BIO_MAX_LENGTH,
@@ -219,31 +220,10 @@ export default function EditProfile() {
               <label className="block text-sm font-bold text-gray-900 mb-1">{t('workerForm.licenseTypeLabelEdit')}</label>
               <select value={licenseType} onChange={(e) => setLicenseType(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-purple-900">
                 <option value="">{t('workerForm.licenseSelectPlaceholder')}</option>
-                <option value="간호사">{t('licenseTypes.간호사', { defaultValue: '간호사' })}</option>
-                <option value="간호조무사">{t('licenseTypes.간호조무사', { defaultValue: '간호조무사' })}</option>
-                <option value="물리치료사">{t('licenseTypes.물리치료사', { defaultValue: '물리치료사' })}</option>
-                <option value="방사선사">{t('licenseTypes.방사선사', { defaultValue: '방사선사' })}</option>
-                <option value="보건교육사">{t('licenseTypes.보건교육사', { defaultValue: '보건교육사' })}</option>
-                <option value="수의사">{t('licenseTypes.수의사', { defaultValue: '수의사' })}</option>
-                <option value="안경사">{t('licenseTypes.안경사', { defaultValue: '안경사' })}</option>
-                <option value="약사">{t('licenseTypes.약사', { defaultValue: '약사' })}</option>
-                <option value="언어재활사">{t('licenseTypes.언어재활사', { defaultValue: '언어재활사' })}</option>
-                <option value="영양사">{t('licenseTypes.영양사', { defaultValue: '영양사' })}</option>
-                <option value="위생사">{t('licenseTypes.위생사', { defaultValue: '위생사' })}</option>
-                <option value="의무기록사">{t('licenseTypes.의무기록사', { defaultValue: '의무기록사' })}</option>
-                <option value="의사">{t('licenseTypes.의사', { defaultValue: '의사' })}</option>
-                <option value="의지보조기기사">{t('licenseTypes.의지보조기기사', { defaultValue: '의지보조기기사' })}</option>
-                <option value="임상병리사">{t('licenseTypes.임상병리사', { defaultValue: '임상병리사' })}</option>
-                <option value="작업치료사">{t('licenseTypes.작업치료사', { defaultValue: '작업치료사' })}</option>
-                <option value="조산사">{t('licenseTypes.조산사', { defaultValue: '조산사' })}</option>
-                <option value="치과기공사">{t('licenseTypes.치과기공사', { defaultValue: '치과기공사' })}</option>
-                <option value="치과위생사">{t('licenseTypes.치과위생사', { defaultValue: '치과위생사' })}</option>
-                <option value="치과의사">{t('licenseTypes.치과의사', { defaultValue: '치과의사' })}</option>
-                <option value="코디네이터">{t('licenseTypes.코디네이터', { defaultValue: '코디네이터' })}</option>
-                <option value="한약사">{t('licenseTypes.한약사', { defaultValue: '한약사' })}</option>
-                <option value="한의사">{t('licenseTypes.한의사', { defaultValue: '한의사' })}</option>
-                <option value="응급구조사(1급)">{t('licenseTypes.응급구조사(1급)', { defaultValue: '응급구조사(1급)' })}</option>
-                <option value="응급구조사(2급)">{t('licenseTypes.응급구조사(2급)', { defaultValue: '응급구조사(2급)' })}</option>
+                {/* 치과 우선 정렬은 MEDICAL_LICENSE_TYPES 한 곳에서 관리 (가입/공고 화면과 순서 일치) */}
+                {MEDICAL_LICENSE_TYPES.map((type) => (
+                  <option key={type} value={type}>{t('licenseTypes.' + type, { defaultValue: type })}</option>
+                ))}
               </select>
             </div>
             <div>

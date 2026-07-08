@@ -1,6 +1,7 @@
 {
   "common": {
-    "appName": "Medinoti"
+    "appName": "Medinoti",
+    "checking": "Checking..."
   },
   "landing": {
     "tagline": "A new standard for medical staffing",
