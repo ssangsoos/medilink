@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// MapPin 제거됨 (에러 수정 버전)
+
 import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,9 @@ import { supabase } from '../lib/supabase';
 import { getMapLanguage, getMapRegion } from '../i18n';
 import PrivacyConsent from '../components/PrivacyConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import DaumPostcode from 'react-daum-postcode';
+import { resolveHospitalAddress, validHospitalCoordinates } from '../lib/hospitalLocation';
+import type { HospitalCoordinates } from '../lib/hospitalLocation';
 
 const libraries: ("places")[] = ["places"];
 const koreaBounds = { north: 38.63, south: 33.00, east: 132.00, west: 124.00 };
@@ -16,10 +19,14 @@ const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px'
 export default function RegisterHospital() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  // Changing SDK language destroys the global Maps objects. Keep this form's
+  // initial locale config while UI translations can still change immediately.
+  const [mapLocale] = useState(() => ({ language: getMapLanguage(), region: getMapRegion() }));
   const [loading, setLoading] = useState(false);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
   const [isManualMode, setIsManualMode] = useState(false);
+  const [searchName, setSearchName] = useState('');
   const [hospitalName, setHospitalName] = useState('');
   const [address, setAddress] = useState('');
   const [hospitalType, setHospitalType] = useState('');
@@ -29,8 +36,68 @@ export default function RegisterHospital() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
-  const [location, setLocation] = useState({ lat: 37.5665, lng: 126.9780 });
-  const [isMapVisible, setIsMapVisible] = useState(false);
+  const [location, setLocation] = useState<(HospitalCoordinates & { address: string; formattedAddress: string; version: number }) | null>(null);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapsError, setMapsError] = useState(false);
+  const [mapsAttempt, setMapsAttempt] = useState(0);
+  const [showPostcode, setShowPostcode] = useState(false);
+  const postcodeDialog = useRef<HTMLDialogElement>(null);
+  const requestVersion = useRef(0);
+  const resolvingRef = useRef(false);
+  const submittingRef = useRef(false);
+
+  useEffect(() => () => { requestVersion.current += 1; }, []);
+  useEffect(() => {
+    if (showPostcode) postcodeDialog.current?.showModal();
+    else postcodeDialog.current?.close();
+  }, [showPostcode]);
+  const onMapsLoad = useCallback(() => { setMapsReady(true); setMapsError(false); }, []);
+  const onMapsError = useCallback(() => { setMapsReady(false); setMapsError(true); }, []);
+  useEffect(() => {
+    if (mapsReady || mapsError) return;
+    const timer = setTimeout(onMapsError, 15000);
+    return () => clearTimeout(timer);
+  }, [mapsReady, mapsError, mapsAttempt, onMapsError]);
+
+  const invalidateLocation = () => {
+    requestVersion.current += 1;
+    resolvingRef.current = false;
+    setResolving(false);
+    setLocation(null);
+    setLocationConfirmed(false);
+    setLocationError('');
+  };
+  const changeAddress = (value: string) => {
+    invalidateLocation();
+    setAddress(value);
+  };
+  const verifyAddress = async () => {
+    if (submittingRef.current || resolvingRef.current || !mapsReady || !address.trim()) return;
+    invalidateLocation();
+    const version = requestVersion.current;
+    const requestedAddress = address;
+    resolvingRef.current = true;
+    setResolving(true);
+    try {
+      const result = await resolveHospitalAddress(requestedAddress);
+      if (version !== requestVersion.current) return;
+      if (!result) {
+        setLocationError('addressNotPrecise');
+        return;
+      }
+      setLocation({ ...result.coordinates, address: requestedAddress, formattedAddress: result.formattedAddress, version });
+    } catch {
+      if (version === requestVersion.current) setLocationError('addressLookupFailed');
+    } finally {
+      if (version === requestVersion.current) {
+        resolvingRef.current = false;
+        setResolving(false);
+      }
+    }
+  };
 
   const [agreeAll, setAgreeAll] = useState(false);
   const [seekingPositions, setSeekingPositions] = useState<string[]>([]);
@@ -57,19 +124,22 @@ export default function RegisterHospital() {
   };
 
   const onPlaceChanged = () => {
-    if (autocomplete !== null) {
+    if (autocomplete !== null && !submittingRef.current) {
       const place = autocomplete.getPlace();
-      if (!place.geometry || !place.geometry.location) return;
-
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-
-      setLocation({ lat, lng });
-      setHospitalName(place.name || '');
+      invalidateLocation();
+      const name = place.name || searchName || hospitalName;
+      setHospitalName(name);
+      setSearchName(name);
       setAddress(place.formatted_address || '');
+      const point = place.geometry?.location;
+      const coordinates = point ? { lat: point.lat(), lng: point.lng() } : null;
+      if (!coordinates || !validHospitalCoordinates(coordinates) || !place.formatted_address) {
+        setIsManualMode(true);
+        setLocationError('placeMissingLocation');
+        return;
+      }
+      setLocation({ ...coordinates, address: place.formatted_address, formattedAddress: place.formatted_address, version: requestVersion.current });
       if (place.formatted_phone_number) setPhone(place.formatted_phone_number);
-
-      setIsMapVisible(true);
       setIsManualMode(false);
     }
   };
@@ -80,17 +150,25 @@ export default function RegisterHospital() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    if (resolvingRef.current || !mapsReady || !location || !locationConfirmed
+      || location.address !== address || location.version !== requestVersion.current
+      || !validHospitalCoordinates(location)) {
+      setLocationError('locationRequired');
+      return;
+    }
 
     if (!agreeAll) {
       alert(t('hospitalForm.errAgreeRequired'));
       return;
     }
 
-    if (!email || !password || !hospitalName || !address) {
+    if (!email || !password || !hospitalName.trim() || !address.trim()) {
       alert(t('hospitalForm.errFillAllRequired'));
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
 
     try {
@@ -146,16 +224,19 @@ export default function RegisterHospital() {
       console.error(error);
       alert(t('hospitalForm.errRegisterGenericPrefix') + error.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const toggleManualMode = () => {
+    if (submittingRef.current) return;
+    invalidateLocation();
     setIsManualMode(!isManualMode);
     if (!isManualMode) {
-        setIsMapVisible(false);
-        setAddress('');
-        setHospitalName('');
+      if (searchName) setHospitalName(searchName);
+    } else {
+      setSearchName(hospitalName);
     }
   };
 
@@ -171,41 +252,50 @@ export default function RegisterHospital() {
         </div>
 
         <LoadScript
+            key={mapsAttempt}
             googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ""}
             libraries={libraries}
-            language={getMapLanguage()}
-            region={getMapRegion()}
+            language={mapLocale.language}
+            region={mapLocale.region}
+            onLoad={onMapsLoad}
+            onError={onMapsError}
+            loadingElement={<></>}
         >
+          <></>
+        </LoadScript>
           <form className="p-8 space-y-6" onSubmit={handleRegister} autoComplete="off">
+            <fieldset disabled={loading} className="space-y-6 min-w-0">
             {/* Chrome 자동완성 흡수용 더미 필드 */}
             <input type="text" name="fake_email" style={{ display: 'none' }} tabIndex={-1} />
             <input type="password" name="fake_pw" style={{ display: 'none' }} tabIndex={-1} />
 
             <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
-              <div className="flex justify-between items-center mb-2">
+              <div className="mb-2">
                 <label className="block text-sm font-bold text-blue-900 flex items-center gap-1">
                   {isManualMode ? <Edit size={16}/> : <Search size={16}/>}
                   {isManualMode ? t('hospitalForm.manualModeLabel') : t('hospitalForm.googleSearchLabel')}
                 </label>
-                <button type="button" onClick={toggleManualMode} className="text-xs text-blue-600 underline">
-                    {isManualMode ? t('hospitalForm.searchAgain') : t('hospitalForm.searchNotWorking')}
-                </button>
               </div>
 
               {!isManualMode ? (
+                mapsReady ? (
                   <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ bounds: koreaBounds, componentRestrictions: { country: "kr" }, fields: ["geometry", "name", "formatted_address", "formatted_phone_number"] }}>
-                    {/* ★ 수정 포인트: placeholder "예: 스마일업의원"으로 변경 */}
-                    <input type="text" placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
+                    <input type="text" aria-label={t('hospitalForm.googleSearchLabel')} value={searchName} onChange={(e) => { invalidateLocation(); setSearchName(e.target.value); setHospitalName(e.target.value); setAddress(''); }} placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
                   </Autocomplete>
+                ) : (
+                  <input type="text" aria-label={t('hospitalForm.googleSearchLabel')} value={searchName} onChange={(e) => { invalidateLocation(); setSearchName(e.target.value); setHospitalName(e.target.value); setAddress(''); }} placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl" />
+                )
               ) : (
                   <div className="text-sm text-gray-600 p-2 bg-white/50 rounded">{t('hospitalForm.manualModeHelp')}</div>
               )}
-
-              {isMapVisible && !isManualMode && (
-                <div className="relative mt-4">
-                  <GoogleMap mapContainerStyle={mapContainerStyle} center={location} zoom={18} options={{ disableDefaultUI: true }}>
-                    <Marker position={location} />
-                  </GoogleMap>
+              <p className="text-sm text-blue-900 mt-3">{t('hospitalForm.searchCoverageHelp')}</p>
+              <button type="button" onClick={toggleManualMode} className="w-full mt-3 px-4 py-3 rounded-xl border-2 border-blue-600 bg-white text-blue-700 font-bold hover:bg-blue-100">
+                {isManualMode ? t('hospitalForm.searchAgain') : t('hospitalForm.manualAddressRegister')}
+              </button>
+              {!mapsReady && (
+                <div className="mt-3 text-sm" role={mapsError ? 'alert' : 'status'}>
+                  <p>{t(mapsError ? 'hospitalForm.mapsUnavailable' : 'hospitalForm.mapsLoading')}</p>
+                  {mapsError && <button type="button" className="mt-2 text-blue-700 underline" onClick={() => { invalidateLocation(); setMapsError(false); setMapsAttempt(value => value + 1); }}>{t('hospitalForm.retryMaps')}</button>}
                 </div>
               )}
             </div>
@@ -213,11 +303,33 @@ export default function RegisterHospital() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.hospitalName')}</label>
-                <input type="text" value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl font-bold ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} />
+                <input type="text" aria-label={t('hospitalForm.hospitalName')} value={hospitalName} onChange={(e) => setHospitalName(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl font-bold ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.address')}</label>
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} />
+                <input type="text" aria-label={t('hospitalForm.address')} value={address} onChange={(e) => changeAddress(e.target.value)} readOnly={!isManualMode} className={`w-full px-4 py-3 border border-gray-300 rounded-xl ${!isManualMode ? 'bg-gray-100' : 'bg-white'}`} placeholder={t('hospitalForm.autoFilledPlaceholder')} onKeyDown={handleKeyDown} />
+                {isManualMode && <>
+                  <p className="text-sm text-gray-600 mt-2">{t('hospitalForm.typedAddressHelp')}</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button type="button" onClick={() => setShowPostcode(true)} className="px-4 py-3 rounded-xl border border-blue-600 text-blue-700 font-bold">{t('hospitalForm.searchRoadAddress')}</button>
+                    <button type="button" onClick={verifyAddress} disabled={!mapsReady || resolving || !address.trim()} className="px-4 py-3 rounded-xl bg-blue-600 text-white font-bold disabled:bg-gray-400">{t('hospitalForm.verifyAddress')}</button>
+                  </div>
+                </>}
+                {resolving && <p role="status" className="mt-3 text-sm text-blue-700">{t('hospitalForm.addressLookupPending')}</p>}
+                {locationError && <p role="alert" className="mt-3 text-sm text-red-700">{t(`hospitalForm.${locationError}`)}</p>}
+                {location && mapsReady && (
+                  <div className="mt-4">
+                    <GoogleMap mapContainerStyle={mapContainerStyle} center={location} zoom={18} options={{ disableDefaultUI: true, zoomControl: true }}>
+                      <Marker position={location} />
+                    </GoogleMap>
+                    <p className="mt-2 text-sm font-bold">{location.formattedAddress}</p>
+                    <p className="mt-2 text-sm text-gray-600">{t('hospitalForm.mapLocationHelp')}</p>
+                    <label className="flex items-start gap-2 mt-3 text-sm font-bold text-blue-900">
+                      <input type="checkbox" className="mt-1" checked={locationConfirmed} onChange={(e) => { setLocationConfirmed(e.target.checked); setLocationError(''); }} />
+                      {t('hospitalForm.confirmMapLocation')}
+                    </label>
+                  </div>
+                )}
               </div>
               <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl" placeholder={t('hospitalForm.detailAddressPlaceholderWithExample')} />
 
@@ -314,7 +426,7 @@ export default function RegisterHospital() {
 
             <PrivacyConsent onValidChange={setAgreeAll} />
 
-            <button disabled={loading} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-shadow shadow-lg disabled:bg-gray-400 mt-4">
+            <button disabled={loading || resolving || !mapsReady || !location || !locationConfirmed} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition-shadow shadow-lg disabled:bg-gray-400 mt-4">
               {loading ? t('hospitalForm.registerSubmitting') : t('hospitalForm.registerSubmit')}
             </button>
 
@@ -324,8 +436,16 @@ export default function RegisterHospital() {
               </Link>
               <LanguageSwitcher />
             </div>
+            </fieldset>
           </form>
-        </LoadScript>
+          <dialog ref={postcodeDialog} aria-label={t('hospitalForm.searchRoadAddress')} onCancel={() => setShowPostcode(false)} onClose={() => setShowPostcode(false)} className="w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] rounded-2xl p-4 backdrop:bg-black/50">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h3 className="font-bold">{t('hospitalForm.searchRoadAddress')}</h3>
+              <button type="button" onClick={() => setShowPostcode(false)} className="px-3 py-2 text-blue-700 font-bold">{t('hospitalForm.closeAddressSearch')}</button>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">{t('hospitalForm.typedAddressHelp')}</p>
+            {showPostcode && <DaumPostcode style={{ height: '420px' }} errorMessage={<p role="alert">{t('hospitalForm.postcodeUnavailable')}</p>} onComplete={(data) => { changeAddress(data.roadAddress || data.address); setShowPostcode(false); }} />}
+          </dialog>
       </div>
     </div>
   );
