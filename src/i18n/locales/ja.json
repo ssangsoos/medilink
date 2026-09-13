@@ -328,6 +328,11 @@
     "workRadiusLabelEdit": "希望勤務範囲"
   },
   "hospitalForm": {
+    "nameSearchLoading": "Googleで医療機関名を検索しています…",
+    "nameSearchDetails": "選択した医療機関の情報を確認しています…",
+    "nameSearchEmpty": "検索結果がありません。名前に都市・地域を追加するか、下の住所登録をご利用ください。",
+    "nameSearchError": "名前検索を完了できませんでした。検索語を変更して再試行するか、下の住所登録をご利用ください。",
+    "nameSearchResults": "医療機関名の検索結果",
     "manualAddressRegister": "病院名を直接入力・住所で登録",
     "searchCoverageHelp": "Googleに登録された世界各地の病院を名前で検索できます。見つからない場合は別の病院を選ばず、病院名と住所全体を直接入力してください。",
     "searchRoadAddress": "韓国の住所検索",

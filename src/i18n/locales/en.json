@@ -328,6 +328,11 @@
     "workRadiusLabelEdit": "Desired work radius"
   },
   "hospitalForm": {
+    "nameSearchLoading": "Searching Google for this hospital name…",
+    "nameSearchDetails": "Loading the selected place details…",
+    "nameSearchEmpty": "No results found. Add a city or area to the name, or register by address below.",
+    "nameSearchError": "Name search could not be completed. Edit the query to retry, or register by address below.",
+    "nameSearchResults": "Hospital name search results",
     "manualAddressRegister": "Enter clinic name · register by address",
     "searchCoverageHelp": "Search Google-listed clinics worldwide by name. If yours does not appear, do not select a different clinic; enter your clinic name and full address instead.",
     "searchRoadAddress": "Korean address search",

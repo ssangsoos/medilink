@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   mapsPending: false,
   mapLanguage: 'ko',
   loaderConfig: vi.fn(),
-  autocompleteOptions: vi.fn(),
+  searchProps: vi.fn(),
   place: {} as google.maps.places.PlaceResult,
   geocode: vi.fn(), signUp: vi.fn(), insert: vi.fn(), from: vi.fn(), signOut: vi.fn(),
 }));
@@ -27,6 +27,10 @@ vi.mock('../src/components/PrivacyConsent', () => ({ default: ({ onValidChange }
   <button type="button" onClick={() => onValidChange(true)}>test consent</button> }));
 vi.mock('react-daum-postcode', () => ({ default: ({ onComplete }: { onComplete: (data: { roadAddress: string; address: string }) => void }) =>
   <button type="button" onClick={() => onComplete({ roadAddress: '서울특별시 강남구 압구정로 152', address: '서울 강남구 신사동' })}>test postcode result</button> }));
+vi.mock('../src/components/HospitalPlaceSearch', () => ({ default: ({ value, onChange, onSelect }: { value: string; onChange: (value: string) => void; onSelect: (place: google.maps.places.PlaceResult) => void }) => {
+  mocks.searchProps({ value, onChange, onSelect });
+  return <div><input aria-label="hospitalForm.googleSearchLabel" placeholder="hospitalForm.hospitalNamePlaceholderExample" value={value} onChange={e => onChange(e.target.value)} /><button type="button" onClick={() => onSelect(mocks.place)}>test select place</button></div>;
+} }));
 vi.mock('@react-google-maps/api', () => ({
   LoadScript: ({ children, onLoad, onError, language, region }: { children: ReactNode; onLoad?: () => void; onError?: (error: Error) => void; language: string; region: string }) => {
     mocks.loaderConfig({ language, region });
@@ -35,13 +39,6 @@ vi.mock('@react-google-maps/api', () => ({
       else if (!mocks.mapsPending) onLoad?.();
     }, [onLoad, onError]);
     return mocks.mapsFail || mocks.mapsPending ? <div>test maps unavailable</div> : children;
-  },
-  Autocomplete: ({ children, onLoad, onPlaceChanged, options }: { children: ReactNode; onLoad: (instance: unknown) => void; onPlaceChanged: () => void; options: google.maps.places.AutocompleteOptions }) => {
-    mocks.autocompleteOptions(options);
-    // Match the SDK's once-per-instance callback, not each parent render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => { onLoad({ getPlace: () => mocks.place }); }, []);
-    return <div>{children}<button type="button" onClick={onPlaceChanged}>test select place</button></div>;
   },
   GoogleMap: ({ children, center }: { children: ReactNode; center: { lat: number; lng: number } }) =>
     <div data-testid="map" data-lat={center.lat} data-lng={center.lng}>{children}</div>,
@@ -192,14 +189,20 @@ describe('hospital address registration (all external services mocked)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.placeMissingLocation');
     expect(nameInput()).toHaveValue(NAME);
   });
-  it('requests returned types and establishment-only autocomplete suggestions', () => {
+  it('connects signup to the unrestricted text-search selection interface', () => {
     renderForm();
-    expect(mocks.autocompleteOptions).toHaveBeenLastCalledWith(expect.objectContaining({
-      types: ['establishment'], fields: expect.arrayContaining(['types']),
-    }));
-    const options = mocks.autocompleteOptions.mock.calls.at(-1)![0];
-    expect(options).not.toHaveProperty('componentRestrictions');
-    expect(options).not.toHaveProperty('bounds');
+    expect(mocks.searchProps).toHaveBeenLastCalledWith({ value: '', onChange: expect.any(Function), onSelect: expect.any(Function) });
+  });
+  it('applies the real Apgujeong name/address/phone/pin and still requires explicit confirmation', async () => {
+    mocks.place = { place_id: 'ChIJEwnAb_OjfDUR5juAgngByUs', name: 'Yonsei baro dental clinic', formatted_address: '서울특별시 강남구 신사동 논현로 873', formatted_phone_number: '02-123-4567', types: ['dentist', 'establishment'], geometry: { location: { lat: () => 37.5265801, lng: () => 127.0282433 } as google.maps.LatLng } };
+    renderForm(); fillRequired(); fireEvent.click(screen.getByText('test select place')); await resolved();
+    expect(nameInput()).toHaveValue(mocks.place.name);
+    expect(addressInput()).toHaveValue(mocks.place.formatted_address);
+    expect(screen.getByPlaceholderText('hospitalForm.phonePlaceholder')).toHaveValue('02-123-4567');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-lat', '37.5265801');
+    expect(screen.getByTestId('map')).toHaveAttribute('data-lng', '127.0282433');
+    submit(); noWrites(); confirm(); submit();
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalled());
   });
   it.each([
     { name: 'Tokyo clinic', address: '1-1-1 Shinjuku, Tokyo, Japan', lat: 35.69, lng: 139.70 },
@@ -283,7 +286,7 @@ it('labels postcode as an optional Korean helper in every locale', () => {
   expect(ja.hospitalForm.searchRoadAddress).toBe('韓国の住所検索');
 });
 it('provides all new hospital fallback strings in Korean, English and Japanese', () => {
-  const keys = ['manualAddressRegister', 'searchCoverageHelp', 'searchRoadAddress', 'verifyAddress', 'addressLookupPending', 'addressLookupFailed', 'addressNotPrecise', 'mapsUnavailable', 'mapsLoading', 'retryMaps', 'confirmMapLocation', 'mapLocationHelp', 'locationRequired', 'placeMissingLocation', 'closeAddressSearch', 'typedAddressHelp', 'postcodeUnavailable'];
+  const keys = ['nameSearchLoading', 'nameSearchDetails', 'nameSearchEmpty', 'nameSearchError', 'nameSearchResults', 'manualAddressRegister', 'searchCoverageHelp', 'searchRoadAddress', 'verifyAddress', 'addressLookupPending', 'addressLookupFailed', 'addressNotPrecise', 'mapsUnavailable', 'mapsLoading', 'retryMaps', 'confirmMapLocation', 'mapLocationHelp', 'locationRequired', 'placeMissingLocation', 'closeAddressSearch', 'typedAddressHelp', 'postcodeUnavailable'];
   for (const locale of [ko, en, ja]) for (const key of keys) {
     expect((locale.hospitalForm as Record<string, string>)[key], key).toBeTruthy();
   }

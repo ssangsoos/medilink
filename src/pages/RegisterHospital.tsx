@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Building2, ArrowLeft, Search, Edit } from 'lucide-react';
-import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { getMapLanguage, getMapRegion } from '../i18n';
 import PrivacyConsent from '../components/PrivacyConsent';
+import HospitalPlaceSearch from '../components/HospitalPlaceSearch';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import DaumPostcode from 'react-daum-postcode';
 import { preciseHospitalPlaceTypes, resolveHospitalAddress, validHospitalCoordinates } from '../lib/hospitalLocation';
@@ -23,7 +24,6 @@ export default function RegisterHospital() {
   // initial locale config while UI translations can still change immediately.
   const [mapLocale] = useState(() => ({ language: getMapLanguage(), region: getMapRegion() }));
   const [loading, setLoading] = useState(false);
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
   const [isManualMode, setIsManualMode] = useState(false);
   const [searchName, setSearchName] = useState('');
@@ -119,13 +119,8 @@ export default function RegisterHospital() {
     );
   };
 
-  const onLoad = (autocompleteInstance: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocompleteInstance);
-  };
-
-  const onPlaceChanged = () => {
-    if (autocomplete !== null && !submittingRef.current) {
-      const place = autocomplete.getPlace();
+  const applyPlace = (place: google.maps.places.PlaceResult) => {
+    if (!submittingRef.current) {
       invalidateLocation();
       const name = place.name || searchName || hospitalName;
       setHospitalName(name);
@@ -140,7 +135,7 @@ export default function RegisterHospital() {
         return;
       }
       setLocation({ ...coordinates, address: place.formatted_address, formattedAddress: place.formatted_address, version: requestVersion.current });
-      if (place.formatted_phone_number) setPhone(place.formatted_phone_number);
+      setPhone(place.formatted_phone_number || '');
       setIsManualMode(false);
     }
   };
@@ -280,9 +275,7 @@ export default function RegisterHospital() {
 
               {!isManualMode ? (
                 mapsReady ? (
-                  <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ types: ['establishment'], fields: ["geometry", "name", "formatted_address", "formatted_phone_number", "types"] }}>
-                    <input type="text" aria-label={t('hospitalForm.googleSearchLabel')} value={searchName} onChange={(e) => { invalidateLocation(); setSearchName(e.target.value); setHospitalName(e.target.value); setAddress(''); }} placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
-                  </Autocomplete>
+                  <HospitalPlaceSearch value={searchName} onChange={(value) => { invalidateLocation(); setSearchName(value); setHospitalName(value); setAddress(''); setPhone(''); }} onSelect={applyPlace} />
                 ) : (
                   <input type="text" aria-label={t('hospitalForm.googleSearchLabel')} value={searchName} onChange={(e) => { invalidateLocation(); setSearchName(e.target.value); setHospitalName(e.target.value); setAddress(''); }} placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl" />
                 )
