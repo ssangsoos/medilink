@@ -301,6 +301,11 @@
     "workRadiusLabelEdit": "근무 희망 반경"
   },
   "hospitalForm": {
+    "nameSearchLoading": "Google에서 병원 이름을 검색하고 있어요…",
+    "nameSearchDetails": "선택한 병원 정보를 확인하고 있어요…",
+    "nameSearchEmpty": "검색 결과가 없어요. 병원 이름에 도시·지역을 추가하거나, 아래에서 주소로 등록해 주세요.",
+    "nameSearchError": "이름 검색을 완료하지 못했어요. 검색어를 수정해 다시 시도하거나, 아래에서 주소로 등록해 주세요.",
+    "nameSearchResults": "병원 이름 검색 결과",
     "manualAddressRegister": "병원명 직접 입력 · 주소로 등록",
     "searchCoverageHelp": "전 세계 Google 등록 병원을 이름으로 검색할 수 있습니다. 검색되지 않으면 다른 병원을 선택하지 말고 병원명과 전체 주소를 직접 입력하세요.",
     "searchRoadAddress": "한국 주소 검색",
