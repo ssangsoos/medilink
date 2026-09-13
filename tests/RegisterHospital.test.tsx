@@ -6,12 +6,14 @@ import ko from '../src/i18n/locales/ko.json';
 import en from '../src/i18n/locales/en.json';
 import ja from '../src/i18n/locales/ja.json';
 import RegisterHospital from '../src/pages/RegisterHospital';
+import { validHospitalCoordinates } from '../src/lib/hospitalLocation';
 
 const mocks = vi.hoisted(() => ({
   mapsFail: false,
   mapsPending: false,
   mapLanguage: 'ko',
   loaderConfig: vi.fn(),
+  autocompleteOptions: vi.fn(),
   place: {} as google.maps.places.PlaceResult,
   geocode: vi.fn(), signUp: vi.fn(), insert: vi.fn(), from: vi.fn(), signOut: vi.fn(),
 }));
@@ -34,7 +36,8 @@ vi.mock('@react-google-maps/api', () => ({
     }, [onLoad, onError]);
     return mocks.mapsFail || mocks.mapsPending ? <div>test maps unavailable</div> : children;
   },
-  Autocomplete: ({ children, onLoad, onPlaceChanged }: { children: ReactNode; onLoad: (instance: unknown) => void; onPlaceChanged: () => void }) => {
+  Autocomplete: ({ children, onLoad, onPlaceChanged, options }: { children: ReactNode; onLoad: (instance: unknown) => void; onPlaceChanged: () => void; options: google.maps.places.AutocompleteOptions }) => {
+    mocks.autocompleteOptions(options);
     // Match the SDK's once-per-instance callback, not each parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { onLoad({ getPlace: () => mocks.place }); }, []);
@@ -117,7 +120,7 @@ describe('hospital address registration (all external services mocked)', () => {
     fireEvent.click(screen.getByText('test postcode result'));
     expect(addressInput()).toHaveValue(ADDRESS);
     lookup(); await resolved();
-    expect(mocks.geocode).toHaveBeenCalledWith({ address: ADDRESS, componentRestrictions: { country: 'KR' }, region: 'KR' });
+    expect(mocks.geocode).toHaveBeenCalledWith({ address: ADDRESS });
     expect(screen.getByTestId('map')).toHaveAttribute('data-lat', String(coords.lat));
     expect(screen.getByTestId('map')).toHaveAttribute('data-lng', String(coords.lng));
     submit(); noWrites();
@@ -154,6 +157,11 @@ describe('hospital address registration (all external services mocked)', () => {
   it.each([
     ['zero results', []], ['ambiguous results', [result(), result()]],
     ['partial match', [result({ partial_match: true })]],
+    ...['premise', 'street_address'].flatMap(type => ['APPROXIMATE', 'GEOMETRIC_CENTER'].map(location_type => [
+      `${location_type} ${type}`, [result({ types: [type], geometry: { location: { lat: () => coords.lat, lng: () => coords.lng }, location_type } })],
+    ])),
+    ['broad administrative rooftop', [result({ types: ['administrative_area_level_3'] })]],
+    ['road rooftop', [result({ types: ['route'] })]],
     ['coarse city', [result({ types: ['locality'], geometry: { location: { lat: () => 37.5, lng: () => 127 }, location_type: 'APPROXIMATE' } })]],
     ['zero coordinates', [result({ geometry: { location: { lat: () => 0, lng: () => 0 }, location_type: 'ROOFTOP' } })]],
     ['invalid coordinates', [result({ geometry: { location: { lat: () => NaN, lng: () => 127 }, location_type: 'ROOFTOP' } })]],
@@ -172,7 +180,7 @@ describe('hospital address registration (all external services mocked)', () => {
     if (mocks.mapsFail) expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.mapsUnavailable');
   });
   it('keeps Google autocomplete working but invalidates a selected location on new search text', async () => {
-    mocks.place = { name: NAME, formatted_address: ADDRESS, geometry: { location: { lat: () => coords.lat, lng: () => coords.lng } as google.maps.LatLng } };
+    mocks.place = { name: NAME, types: ['dentist', 'health', 'point_of_interest', 'establishment'], formatted_address: ADDRESS, geometry: { location: { lat: () => coords.lat, lng: () => coords.lng } as google.maps.LatLng } };
     renderForm(); fireEvent.click(screen.getByText('test select place')); await resolved(); confirm();
     fireEvent.change(screen.getByPlaceholderText('hospitalForm.hospitalNamePlaceholderExample'), { target: { value: 'another hospital' } });
     fillRequired(); submit(); noWrites();
@@ -183,6 +191,65 @@ describe('hospital address registration (all external services mocked)', () => {
     renderForm(); fireEvent.click(screen.getByText('test select place'));
     expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.placeMissingLocation');
     expect(nameInput()).toHaveValue(NAME);
+  });
+  it('requests returned types and establishment-only autocomplete suggestions', () => {
+    renderForm();
+    expect(mocks.autocompleteOptions).toHaveBeenLastCalledWith(expect.objectContaining({
+      types: ['establishment'], fields: expect.arrayContaining(['types']),
+    }));
+    const options = mocks.autocompleteOptions.mock.calls.at(-1)![0];
+    expect(options).not.toHaveProperty('componentRestrictions');
+    expect(options).not.toHaveProperty('bounds');
+  });
+  it.each([
+    { name: 'Tokyo clinic', address: '1-1-1 Shinjuku, Tokyo, Japan', lat: 35.69, lng: 139.70 },
+    { name: 'New York clinic', address: '123 Main Street, New York, NY, USA', lat: 40.71, lng: -74.01 },
+  ])('registers worldwide selected business $name with its actual coordinates', async clinic => {
+    mocks.place = { name: clinic.name, types: ['dentist', 'establishment'], formatted_address: clinic.address,
+      geometry: { location: { lat: () => clinic.lat, lng: () => clinic.lng } as google.maps.LatLng } };
+    renderForm(); fillRequired(); fireEvent.click(screen.getByText('test select place')); await resolved();
+    expect(nameInput()).toHaveValue(clinic.name); expect(addressInput()).toHaveValue(clinic.address);
+    submit(); noWrites(); confirm(); submit();
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalled());
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ name: clinic.name, address: clinic.address, latitude: clinic.lat, longitude: clinic.lng });
+  });
+  it.each([{ lat: 35.69, lng: 139.70 }, { lat: 40.71, lng: -74.01 }])('verifies global manual coordinates %j without restricting country', async point => {
+    mocks.geocode.mockResolvedValue({ results: [result({ geometry: { location: { lat: () => point.lat, lng: () => point.lng }, location_type: 'ROOFTOP' } })] });
+    renderForm(); manual(); fillRequired(); typeAddress('Full street, city, country'); lookup(); await resolved(); confirm(); submit();
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalled());
+    expect(mocks.geocode).toHaveBeenCalledWith({ address: 'Full street, city, country' });
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ latitude: point.lat, longitude: point.lng });
+  });
+  it.each([
+    ['city', ['locality', 'political']], ['road', ['route']],
+    ['mixed broad/business', ['establishment', 'administrative_area_level_3']],
+    ['missing types', undefined], ['empty types', []], ['generic POI', ['point_of_interest']],
+  ])('rejects autocomplete %s even with domestic coordinates and an address', async (_, types) => {
+    mocks.place = { name: NAME, types: types as string[] | undefined, formatted_address: ADDRESS,
+      geometry: { location: { lat: () => coords.lat, lng: () => coords.lng } as google.maps.LatLng } };
+    renderForm(); fireEvent.click(screen.getByText('test select place')); fillRequired();
+    const checkbox = screen.queryByRole('checkbox', { name: 'hospitalForm.confirmMapLocation' });
+    if (checkbox) fireEvent.click(checkbox);
+    submit(); await act(async () => {}); noWrites();
+    expect(screen.queryByTestId('map')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'hospitalForm.verifyAddress' })).toBeVisible();
+    expect(addressInput()).toHaveValue(ADDRESS);
+  });
+  it.each([['dentist', 'health', 'point_of_interest', 'establishment'], ['premise']])('allows precise place types %j only after explicit map confirmation', async (...types) => {
+    mocks.place = { name: NAME, types: types as string[], formatted_address: ADDRESS,
+      geometry: { location: { lat: () => coords.lat, lng: () => coords.lng } as google.maps.LatLng } };
+    renderForm(); fireEvent.click(screen.getByText('test select place')); fillRequired(); await resolved();
+    submit(); noWrites(); confirm(); submit();
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalled());
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ latitude: coords.lat, longitude: coords.lng });
+    expect(mocks.geocode).not.toHaveBeenCalled();
+  });
+  it.each(['ROOFTOP', 'RANGE_INTERPOLATED'])('allows exact manual geometry %s after confirmation', async location_type => {
+    mocks.geocode.mockResolvedValue({ results: [result({ geometry: { location: { lat: () => coords.lat, lng: () => coords.lng }, location_type } })] });
+    renderForm(); manual(); fillRequired(); typeAddress(); lookup(); await resolved();
+    submit(); noWrites(); confirm(); submit();
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalled());
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ latitude: coords.lat, longitude: coords.lng });
   });
   it('ignores a stale error after switching away from manual mode', async () => {
     let reject!: (error: Error) => void;
@@ -201,6 +268,20 @@ describe('hospital address registration (all external services mocked)', () => {
   });
 });
 
+it.each([
+  { lat: NaN, lng: 127 }, { lat: 37, lng: Infinity }, { lat: 91, lng: 0 },
+  { lat: -91, lng: 0 }, { lat: 0, lng: 181 }, { lat: 0, lng: -181 }, { lat: 0, lng: 0 },
+])('rejects invalid world coordinates %j', point => {
+  expect(validHospitalCoordinates(point)).toBe(false);
+});
+it.each([{ lat: 35.69, lng: 139.70 }, { lat: 40.71, lng: -74.01 }, { lat: 0, lng: 30 }, { lat: 51, lng: 0 }])('accepts valid world coordinates %j', point => {
+  expect(validHospitalCoordinates(point)).toBe(true);
+});
+it('labels postcode as an optional Korean helper in every locale', () => {
+  expect(ko.hospitalForm.searchRoadAddress).toBe('한국 주소 검색');
+  expect(en.hospitalForm.searchRoadAddress).toBe('Korean address search');
+  expect(ja.hospitalForm.searchRoadAddress).toBe('韓国の住所検索');
+});
 it('provides all new hospital fallback strings in Korean, English and Japanese', () => {
   const keys = ['manualAddressRegister', 'searchCoverageHelp', 'searchRoadAddress', 'verifyAddress', 'addressLookupPending', 'addressLookupFailed', 'addressNotPrecise', 'mapsUnavailable', 'mapsLoading', 'retryMaps', 'confirmMapLocation', 'mapLocationHelp', 'locationRequired', 'placeMissingLocation', 'closeAddressSearch', 'typedAddressHelp', 'postcodeUnavailable'];
   for (const locale of [ko, en, ja]) for (const key of keys) {

@@ -9,11 +9,11 @@ import { getMapLanguage, getMapRegion } from '../i18n';
 import PrivacyConsent from '../components/PrivacyConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import DaumPostcode from 'react-daum-postcode';
-import { resolveHospitalAddress, validHospitalCoordinates } from '../lib/hospitalLocation';
+import { preciseHospitalPlaceTypes, resolveHospitalAddress, validHospitalCoordinates } from '../lib/hospitalLocation';
 import type { HospitalCoordinates } from '../lib/hospitalLocation';
 
 const libraries: ("places")[] = ["places"];
-const koreaBounds = { north: 38.63, south: 33.00, east: 132.00, west: 124.00 };
+
 const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px', marginTop: '16px' };
 
 export default function RegisterHospital() {
@@ -133,7 +133,8 @@ export default function RegisterHospital() {
       setAddress(place.formatted_address || '');
       const point = place.geometry?.location;
       const coordinates = point ? { lat: point.lat(), lng: point.lng() } : null;
-      if (!coordinates || !validHospitalCoordinates(coordinates) || !place.formatted_address) {
+      if (!coordinates || !validHospitalCoordinates(coordinates) || !place.formatted_address
+        || !preciseHospitalPlaceTypes(place.types)) {
         setIsManualMode(true);
         setLocationError('placeMissingLocation');
         return;
@@ -279,7 +280,7 @@ export default function RegisterHospital() {
 
               {!isManualMode ? (
                 mapsReady ? (
-                  <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ bounds: koreaBounds, componentRestrictions: { country: "kr" }, fields: ["geometry", "name", "formatted_address", "formatted_phone_number"] }}>
+                  <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged} options={{ types: ['establishment'], fields: ["geometry", "name", "formatted_address", "formatted_phone_number", "types"] }}>
                     <input type="text" aria-label={t('hospitalForm.googleSearchLabel')} value={searchName} onChange={(e) => { invalidateLocation(); setSearchName(e.target.value); setHospitalName(e.target.value); setAddress(''); }} placeholder={t('hospitalForm.hospitalNamePlaceholderExample')} onKeyDown={handleKeyDown} className="w-full px-4 py-4 border border-blue-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-bold shadow-sm" />
                   </Autocomplete>
                 ) : (
