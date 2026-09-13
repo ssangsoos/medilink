@@ -1,12 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { getMapLanguage, getMapRegion } from '../i18n';
+import { resolveHospitalAddress, validHospitalCoordinates } from '../lib/hospitalLocation';
+import type { HospitalCoordinates } from '../lib/hospitalLocation';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Search, Phone, Building2, Trash2, Shield } from 'lucide-react';
 import { useDaumPostcodePopup } from 'react-daum-postcode';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+
+const libraries: ('places')[] = ['places'];
+const mapContainerStyle = { width: '100%', height: '240px', borderRadius: '12px' };
 
 export default function EditHospital() {
   const navigate = useNavigate();
@@ -14,6 +20,28 @@ export default function EditHospital() {
   const open = useDaumPostcodePopup();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  // Keep the SDK locale stable while UI translations may change.
+  const [mapLocale] = useState(() => ({ language: getMapLanguage(), region: getMapRegion() }));
+  const [original, setOriginal] = useState<{ id: string; address: string; coordinates: HospitalCoordinates | null } | null>(null);
+  const [location, setLocation] = useState<(HospitalCoordinates & { address: string; formattedAddress: string; version: number }) | null>(null);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [lookupAttempted, setLookupAttempted] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [mapsReady, setMapsReady] = useState(false);
+  const [mapsError, setMapsError] = useState(false);
+  const [mapsAttempt, setMapsAttempt] = useState(0);
+  const requestVersion = useRef(0);
+  const resolvingRef = useRef(false);
+  const submittingRef = useRef(false);
+  const onMapsLoad = useCallback(() => { setMapsReady(true); setMapsError(false); }, []);
+  const onMapsError = useCallback(() => { setMapsReady(false); setMapsError(true); }, []);
+  useEffect(() => () => { requestVersion.current += 1; }, []);
+  useEffect(() => {
+    if (initialLoading || mapsReady || mapsError) return;
+    const timer = setTimeout(onMapsError, 15000);
+    return () => clearTimeout(timer);
+  }, [initialLoading, mapsReady, mapsError, mapsAttempt, onMapsError]);
 
   const [hospitalName, setHospitalName] = useState('');
   const [hospitalType, setHospitalType] = useState('');
@@ -52,7 +80,9 @@ export default function EditHospital() {
         .eq('id', user.id)
         .single();
 
-      if (data) {
+      if (data && data.id === user.id) {
+        const coordinates = { lat: data.latitude, lng: data.longitude };
+        setOriginal({ id: data.id, address: data.address || '', coordinates: validHospitalCoordinates(coordinates) ? coordinates : null });
         setHospitalName(data.hospital_name || '');
         setHospitalType(data.hospital_type || '');
         setBusinessNumber(data.business_number || '');
@@ -69,15 +99,46 @@ export default function EditHospital() {
     fetchProfile();
   }, []);
 
-  const handleAddressComplete = (data: any) => {
-    let fullAddress = data.address;
-    let extraAddress = '';
-    if (data.addressType === 'R') {
-      if (data.bname !== '') extraAddress += data.bname;
-      if (data.buildingName !== '') extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
-      fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
+  const invalidateLocation = () => {
+    requestVersion.current += 1;
+    resolvingRef.current = false;
+    setResolving(false);
+    setLocation(null);
+    setLocationConfirmed(false);
+    setLocationError('');
+  };
+  const changeAddress = (value: string) => {
+    if (submittingRef.current) return;
+    invalidateLocation();
+    setAddress(value);
+  };
+  const handleAddressComplete = (data: { roadAddress?: string; address: string }) => {
+    changeAddress(data.roadAddress || data.address);
+  };
+  const verifyAddress = async () => {
+    if (submittingRef.current || resolvingRef.current || !mapsReady || !address.trim()) return;
+    invalidateLocation();
+    setLookupAttempted(true);
+    const version = requestVersion.current;
+    const requestedAddress = address;
+    resolvingRef.current = true;
+    setResolving(true);
+    try {
+      const result = await resolveHospitalAddress(requestedAddress);
+      if (version !== requestVersion.current) return;
+      if (!result || !validHospitalCoordinates(result.coordinates)) {
+        setLocationError('addressNotPrecise');
+        return;
+      }
+      setLocation({ ...result.coordinates, address: requestedAddress, formattedAddress: result.formattedAddress, version });
+    } catch {
+      if (version === requestVersion.current) setLocationError('addressLookupFailed');
+    } finally {
+      if (version === requestVersion.current) {
+        resolvingRef.current = false;
+        setResolving(false);
+      }
     }
-    setAddress(fullAddress);
   };
 
   const handleSearchAddress = () => {
@@ -86,13 +147,22 @@ export default function EditHospital() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    const needsLocation = !original?.coordinates || address !== original.address || lookupAttempted;
+    if (needsLocation && (resolvingRef.current || !mapsReady || !location || !locationConfirmed
+      || location.address !== address || location.version !== requestVersion.current
+      || !validHospitalCoordinates(location))) {
+      setLocationError('locationRequired');
+      return;
+    }
+    submittingRef.current = true;
     setLoading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error(t('hospitalForm.errLoginRequired'));
+      if (!user || !original || user.id !== original.id) throw new Error(t('hospitalForm.errLoginRequired'));
 
-      let updates: any = {
+      const updates: any = {
         name: hospitalName,
         hospital_name: hospitalName,
         hospital_type: hospitalType,
@@ -106,16 +176,20 @@ export default function EditHospital() {
         employment_type: employmentType || null
       };
 
-      if (address) {
-        const coords = await getCoordinates(address);
-        if (coords) {
-          updates.latitude = coords.lat;
-          updates.longitude = coords.lng;
-        }
+      if (needsLocation && location) {
+        updates.latitude = location.lat;
+        updates.longitude = location.lng;
       }
 
-      const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+      const { data, error } = await supabase.from('profiles').update(updates).eq('id', original.id)
+        .select('id,address,latitude,longitude').single();
       if (error) throw error;
+      const expectedAddress = needsLocation ? address : original.address;
+      const expectedCoordinates = needsLocation ? location : original.coordinates;
+      if (!data || data.id !== original.id || data.address !== expectedAddress
+        || data.latitude !== expectedCoordinates?.lat || data.longitude !== expectedCoordinates?.lng) {
+        throw new Error(t('hospitalForm.locationRequired'));
+      }
 
       alert(t('hospitalForm.editSuccessAlert'));
       navigate('/dashboard');
@@ -123,6 +197,7 @@ export default function EditHospital() {
     } catch (error: any) {
       alert(t('hospitalForm.errSaveFailedPrefix') + error.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -171,7 +246,11 @@ export default function EditHospital() {
           <h2 className="text-2xl font-bold">{t('hospitalForm.editTitle')}</h2>
         </div>
 
+        <LoadScript key={mapsAttempt} googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}
+          libraries={libraries} language={mapLocale.language} region={mapLocale.region}
+          onLoad={onMapsLoad} onError={onMapsError} loadingElement={<></>}><></></LoadScript>
         <form onSubmit={handleSave} className="p-8 space-y-6">
+          <fieldset disabled={loading} className="space-y-6 min-w-0">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1">
@@ -203,12 +282,29 @@ export default function EditHospital() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">{t('hospitalForm.addressLabelEdit')}</label>
-              <div className="flex gap-2">
-                <input type="text" readOnly value={address} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-black" placeholder={t('hospitalForm.addressSearchPlaceholder')} />
-                <button type="button" onClick={handleSearchAddress} className="px-4 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-black flex items-center gap-2">
-                  <Search size={18} /> {t('hospitalForm.searchButton')}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input type="text" aria-label={t('hospitalForm.addressLabelEdit')} value={address} onChange={(e) => changeAddress(e.target.value)} className="w-full min-w-0 sm:flex-1 px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-black" placeholder={t('hospitalForm.addressSearchPlaceholder')} />
+                <button type="button" onClick={handleSearchAddress} className="shrink-0 justify-center whitespace-nowrap px-4 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-black flex items-center gap-2">
+                  <Search size={18} /> {t('hospitalForm.searchRoadAddress')}
                 </button>
               </div>
+              <p className="mt-2 text-sm text-gray-600">{t('hospitalForm.typedAddressHelp')}</p>
+              <button type="button" onClick={verifyAddress} disabled={!mapsReady || resolving || !address.trim()} className="mt-3 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold disabled:bg-gray-400">{t('hospitalForm.verifyAddress')}</button>
+              {!mapsReady && <div className="mt-3 text-sm" role={mapsError ? 'alert' : 'status'}>
+                <p>{t(mapsError ? 'hospitalForm.mapsUnavailable' : 'hospitalForm.mapsLoading')}</p>
+                {mapsError && <button type="button" onClick={() => { invalidateLocation(); setMapsError(false); setMapsAttempt(value => value + 1); }} className="text-blue-700 underline">{t('hospitalForm.retryMaps')}</button>}
+              </div>}
+              {resolving && <p role="status" className="mt-3 text-sm text-blue-700">{t('hospitalForm.addressLookupPending')}</p>}
+              {locationError && <p role="alert" className="mt-3 text-sm text-red-700">{t(`hospitalForm.${locationError}`)}</p>}
+              {location && mapsReady && <div className="mt-4">
+                <GoogleMap mapContainerStyle={mapContainerStyle} center={location} zoom={18} options={{ disableDefaultUI: true, zoomControl: true }}><Marker position={location} /></GoogleMap>
+                <p className="mt-2 text-sm font-bold">{location.formattedAddress}</p>
+                <p className="mt-2 text-sm text-gray-600">{t('hospitalForm.mapLocationHelp')}</p>
+                <label className="flex items-start gap-2 mt-3 text-sm font-bold text-blue-900">
+                  <input type="checkbox" checked={locationConfirmed} onChange={(e) => { setLocationConfirmed(e.target.checked); setLocationError(''); }} />
+                  {t('hospitalForm.confirmMapLocation')}
+                </label>
+              </div>}
             </div>
             <div>
               <input type="text" value={detailAddress} onChange={(e) => setDetailAddress(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('hospitalForm.detailAddressPlaceholder')} />
@@ -280,6 +376,7 @@ export default function EditHospital() {
             </button>
             <LanguageSwitcher />
           </div>
+          </fieldset>
         </form>
 
         {/* 개인정보 권리 안내 */}
