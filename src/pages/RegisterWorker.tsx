@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Stethoscope, ArrowLeft, Search, ShieldCheck, Info, MapPin, Clock, Sparkles, Calendar, Sun } from 'lucide-react';
-import { useDaumPostcodePopup } from 'react-daum-postcode';
+import { useDaumPostcodePopup, type Address } from 'react-daum-postcode';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import PrivacyConsent from '../components/PrivacyConsent';
+import { buildWorkerContactConsentUpdate } from '../lib/workerContactConsent';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { MEDICAL_LICENSE_TYPES } from '../lib/medicalConstants';
 import { WORK_RADIUS_OPTIONS, optionToRadius } from '../lib/distance';
@@ -33,6 +34,7 @@ export default function RegisterWorker() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreeAll, setAgreeAll] = useState(false);
+  const [workerContactConsent, setWorkerContactConsent] = useState(false);
   const [workRadius, setWorkRadius] = useState<string>('5');
   const [availableFrom, setAvailableFrom] = useState<string>('flexible');
   const [bio, setBio] = useState<string>('');
@@ -40,7 +42,7 @@ export default function RegisterWorker() {
   const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
-  const handleComplete = (data: any) => {
+  const handleComplete = (data: Address) => {
     let fullAddress = data.address;
     let extraAddress = '';
     if (data.addressType === 'R') {
@@ -90,7 +92,8 @@ export default function RegisterWorker() {
         }
       }
 
-      const { error: profileError } = await supabase
+      const expectedConsent = buildWorkerContactConsentUpdate(workerContactConsent);
+      const { data: saved, error: profileError } = await supabase
         .from('profiles')
         .insert([
           {
@@ -103,6 +106,7 @@ export default function RegisterWorker() {
             address: address,
             detail_address: detailAddress,
             phone: phone,
+            ...expectedConsent,
             latitude: lat,
             longitude: lng,
             work_radius: optionToRadius(workRadius),
@@ -113,13 +117,22 @@ export default function RegisterWorker() {
             available_times: availableTimes.length > 0 ? availableTimes : null,
             is_exposed: true // 가입 시 기본 공개
           }
-        ]);
+        ])
+        .select('id,worker_contact_consent,worker_contact_consent_version')
+        .single();
 
       if (profileError) {
         console.error('Profile insert failed:', profileError.message);
         await supabase.auth.signOut();
         alert(t('workerForm.profileInsertError', { message: profileError.message }));
         return;
+      }
+
+      if (!saved || saved.id !== authData.user.id
+        || saved.worker_contact_consent !== expectedConsent.worker_contact_consent
+        || saved.worker_contact_consent_version !== expectedConsent.worker_contact_consent_version) {
+        await supabase.auth.signOut();
+        throw new Error(t('workerContactConsent.saveUnverified'));
       }
 
       if (authData.session) {
@@ -129,9 +142,10 @@ export default function RegisterWorker() {
       }
       navigate('/login');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
       console.error(error);
-      alert(t('workerForm.signupErrorPrefix') + error.message);
+      alert(t('workerForm.signupErrorPrefix') + message);
     } finally {
       setLoading(false);
     }
@@ -351,7 +365,10 @@ export default function RegisterWorker() {
             </div>
           </div>
 
-          <PrivacyConsent onValidChange={setAgreeAll} showThirdParty />
+          <PrivacyConsent onValidChange={(required, contactAccepted) => {
+            setAgreeAll(required);
+            setWorkerContactConsent(contactAccepted);
+          }} showThirdParty />
 
           <button disabled={loading} className="w-full bg-purple-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-purple-950 transition-colors shadow-lg mt-6 disabled:bg-gray-400">
             {loading ? t('workerForm.submitProcessing') : t('workerForm.submitButton')}

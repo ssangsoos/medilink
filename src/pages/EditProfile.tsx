@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { getCoordinates } from '../lib/geocode';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, MapPin, Search, Phone, Home, Edit, Trash2, Shield, Clock, Sparkles, Calendar, Sun, Plus, X } from 'lucide-react';
-import { useDaumPostcodePopup } from 'react-daum-postcode';
+import { useDaumPostcodePopup, type Address } from 'react-daum-postcode';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import WorkerContactConsent from '../components/WorkerContactConsent';
+import { buildWorkerContactConsentUpdate, hasCurrentWorkerContactConsent, WORKER_CONTACT_CONSENT_VERSION } from '../lib/workerContactConsent';
 import { WORK_RADIUS_OPTIONS, optionToRadius, radiusToOption } from '../lib/distance';
 import { MEDICAL_LICENSE_TYPES } from '../lib/medicalConstants';
 import {
@@ -29,10 +31,16 @@ const CAREER_YEAR_OPTIONS = getCareerYearOptions();
 
 export default function EditProfile() {
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const open = useDaumPostcodePopup();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [workerContactConsent, setWorkerContactConsent] = useState(false);
+  const [consentNeedsRenewal, setConsentNeedsRenewal] = useState(false);
+  const [consentChanged, setConsentChanged] = useState(false);
+  const [loadedConsent, setLoadedConsent] = useState<{ worker_contact_consent: boolean | null; worker_contact_consent_version: string | null } | null>(null);
 
   const [name, setName] = useState('');
   const [licenseType, setLicenseType] = useState('');
@@ -61,6 +69,11 @@ export default function EditProfile() {
         .single();
 
       if (data) {
+        setProfileId(user.id);
+        setLoadedConsent({ worker_contact_consent: data.worker_contact_consent ?? null, worker_contact_consent_version: data.worker_contact_consent_version ?? null });
+        setConsentChanged(false);
+        setWorkerContactConsent(hasCurrentWorkerContactConsent(data));
+        setConsentNeedsRenewal(data.worker_contact_consent == null || data.worker_contact_consent_version !== WORKER_CONTACT_CONSENT_VERSION);
         setName(data.name || '');
         setLicenseType(data.license_type || '');
         const parsed = parseExperience(data.experience);
@@ -80,9 +93,15 @@ export default function EditProfile() {
       setInitialLoading(false);
     };
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
-  const handleAddressComplete = (data: any) => {
+  useEffect(() => {
+    if (!initialLoading && hash === '#contact-consent') {
+      document.getElementById('contact-consent')?.scrollIntoView({ block: 'start' });
+    }
+  }, [initialLoading, hash]);
+
+  const handleAddressComplete = (data: Address) => {
     let fullAddress = data.address;
     let extraAddress = '';
     if (data.addressType === 'R') {
@@ -119,8 +138,10 @@ export default function EditProfile() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error(t('workerForm.loginRequired'));
+      if (!profileId || user.id !== profileId || !loadedConsent) throw new Error(t('workerContactConsent.saveUnverified'));
+      const expectedConsent = consentChanged ? buildWorkerContactConsentUpdate(workerContactConsent) : loadedConsent;
 
-      let updates: any = {
+      const updates: Record<string, unknown> = {
         name,
         license_type: licenseType,
         experience: serializeExperience(careerRows, experienceNotes),
@@ -132,6 +153,8 @@ export default function EditProfile() {
         available_days: availableDays.length > 0 ? availableDays : null,
         available_times: availableTimes.length > 0 ? availableTimes : null,
         phone,
+        // An unrelated save must not create or renew a consent receipt.
+        ...(consentChanged ? expectedConsent : {}),
         address,
         detail_address: detailAddress
       };
@@ -144,18 +167,26 @@ export default function EditProfile() {
         }
       }
 
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select('id,worker_contact_consent,worker_contact_consent_version')
+        .single();
 
       if (error) throw error;
+      if (!saved || saved.id !== user.id
+        || saved.worker_contact_consent !== expectedConsent.worker_contact_consent
+        || saved.worker_contact_consent_version !== expectedConsent.worker_contact_consent_version) {
+        throw new Error(t('workerContactConsent.saveUnverified'));
+      }
 
       alert(t('workerForm.saveSuccess'));
       navigate('/dashboard');
 
-    } catch (error: any) {
-      alert(t('workerForm.saveFailedPrefix') + error.message);
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
+      alert(t('workerForm.saveFailedPrefix') + message);
     } finally {
       setLoading(false);
     }
@@ -188,9 +219,10 @@ export default function EditProfile() {
       alert(t('workerForm.deleteSuccess'));
       navigate('/');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error);
       console.error(error);
-      alert(t('workerForm.deleteErrorPrefix') + error.message);
+      alert(t('workerForm.deleteErrorPrefix') + message);
     } finally {
       setLoading(false);
     }
@@ -230,6 +262,12 @@ export default function EditProfile() {
               <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-1"><Phone size={16}/> {t('workerForm.phone')}</label>
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-900" />
             </div>
+            <WorkerContactConsent
+              checked={workerContactConsent}
+              onChange={accepted => { setWorkerContactConsent(accepted); setConsentChanged(true); }}
+              needsRenewal={consentNeedsRenewal}
+              disabled={loading}
+            />
           </div>
 
           <hr className="border-gray-100" />

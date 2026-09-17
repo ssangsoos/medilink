@@ -5,9 +5,13 @@ import { createPortal } from 'react-dom';
 import { Copy, MessageSquare, Phone, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { buildSmsHref, buildTelHref, validateContactPhone } from '../../lib/contactLinks';
+import { openContactApp, resolveWorkerContact } from '../../lib/workerContact';
+import type { WorkerContactFailure } from '../../lib/workerContact';
 import './contact.css';
 
 export interface ContactActionsProps {
+  /** Worker contacts must be resolved server-side on click, never from display-masked fields. */
+  workerId?: string;
   phone?: string;
   smsPhone?: string;
   body: string;
@@ -112,9 +116,16 @@ function DesktopContactDialog({ kind, phone, onClose }: {
   );
 }
 
-function ContactActionsContent({ phone, smsPhone, body, acceptsSms, smsLabel, showPhone = true, compact = false, ghost = false }: ContactActionsProps) {
+function ContactActionsContent({ workerId, phone, smsPhone, body, acceptsSms, smsLabel, showPhone = true, compact = false, ghost = false }: ContactActionsProps) {
   const { t } = useTranslation();
   const [dialogKind, setDialogKind] = useState<ContactKind | null>(null);
+  const [resolvedPhone, setResolvedPhone] = useState<string | null>(null);
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactError, setContactError] = useState<WorkerContactFailure | null>(null);
+  const [mobileContact, setMobileContact] = useState<{ kind: ContactKind; href: string } | null>(null);
+  const contactRequest = useRef(0);
+  const inFlight = useRef(false);
+  useEffect(() => () => { contactRequest.current++; }, []);
   // Undefined consent is NOT treated as opt-in. Existing public-listing contact
   // availability remains unchanged; explicit false always disables SMS.
   const smsTarget = smsPhone === undefined ? phone : smsPhone;
@@ -124,24 +135,68 @@ function ContactActionsContent({ phone, smsPhone, body, acceptsSms, smsLabel, sh
   const telHref = buildTelHref(phone);
   const label = smsLabel || t('mapUi.smsInquiry', { defaultValue: '문자 보내기' });
   const phoneLabel = t('mapUi.call', { defaultValue: '전화' });
-  const modalPhone = validateContactPhone(dialogKind === 'sms' ? smsTarget : phone);
+  const modalPhone = workerId ? resolvedPhone : validateContactPhone(dialogKind === 'sms' ? smsTarget : phone);
+  const errorMessages: Record<WorkerContactFailure, string> = {
+    unavailable: t('mapUi.workerContactUnavailable', { defaultValue: '현재 이 의료인에게 연락할 수 없습니다. 연락 동의 또는 프로필 공개 상태가 변경되었을 수 있습니다.' }),
+    signIn: t('mapUi.workerContactSignIn', { defaultValue: '로그인 후 다시 시도해 주세요.' }),
+    hospitalOnly: t('mapUi.workerContactHospitalOnly', { defaultValue: '병원 회원만 의료인에게 연락할 수 있습니다.' }),
+    setupRequired: t('mapUi.workerContactSetupRequired', { defaultValue: '연락 기능을 준비 중입니다. 잠시 후 다시 시도해 주세요.' }),
+    failed: t('mapUi.workerContactFailed', { defaultValue: '연락처를 불러오지 못했습니다. 다시 시도해 주세요.' }),
+  };
+
+  async function contactWorker(kind: ContactKind) {
+    if (!workerId || inFlight.current || (kind === 'sms' && acceptsSms === false)) return;
+    inFlight.current = true;
+    const request = ++contactRequest.current;
+    setContactBusy(true); setContactError(null); setResolvedPhone(null); setMobileContact(null); setDialogKind(null);
+    try {
+      const value = await resolveWorkerContact(workerId);
+      if (request !== contactRequest.current) return;
+      const valid = validateContactPhone(value);
+      if (!valid) { setContactError('unavailable'); return; }
+      if (mobile) {
+        const href = kind === 'sms' ? buildSmsHref(valid, body, userAgent) : buildTelHref(valid);
+        if (!href) { setContactError('unavailable'); return; }
+        setMobileContact({ kind, href });
+        // Some browsers require another tap after asynchronous authorization.
+        // Preserve an explicit link even when an automatic app handoff is blocked.
+        try { openContactApp(href); } catch { /* User can tap the fallback link. */ }
+      } else {
+        setResolvedPhone(valid); setDialogKind(kind);
+      }
+    } catch (error) {
+      if (request !== contactRequest.current) return;
+      const reason = error && typeof error === 'object' && 'reason' in error ? error.reason : 'failed';
+      setContactError(typeof reason === 'string' && Object.hasOwn(errorMessages, reason) ? reason as WorkerContactFailure : 'failed');
+    } finally {
+      if (request === contactRequest.current) { inFlight.current = false; setContactBusy(false); }
+    }
+  }
+  function closeDialog() { setDialogKind(null); setResolvedPhone(null); }
+
 
   return <div className={`map-contact-actions map-contact-ui${ghost ? ' is-ghost' : ''}`}>
     <div className="map-contact-action-row">
-      {smsHref && mobile ? <a className="map-contact-button map-contact-primary" href={smsHref}><MessageSquare size={16} aria-hidden="true" />{label}</a>
+      {workerId ? <button type="button" className="map-contact-button map-contact-primary" disabled={contactBusy || acceptsSms === false} onClick={() => void contactWorker('sms')}><MessageSquare size={16} aria-hidden="true" />{label}</button> : smsHref && mobile ? <a className="map-contact-button map-contact-primary" href={smsHref}><MessageSquare size={16} aria-hidden="true" />{label}</a>
         : <button type="button" className="map-contact-button map-contact-primary" disabled={!smsHref} onClick={() => setDialogKind('sms')}><MessageSquare size={16} aria-hidden="true" />{label}</button>}
-      {showPhone && (telHref && mobile ? <a className="map-contact-button map-contact-secondary" href={telHref}><Phone size={16} aria-hidden="true" />{phoneLabel}</a>
+      {showPhone && (workerId ? <button type="button" className="map-contact-button map-contact-secondary" disabled={contactBusy} onClick={() => void contactWorker('tel')}><Phone size={16} aria-hidden="true" />{phoneLabel}</button> : telHref && mobile ? <a className="map-contact-button map-contact-secondary" href={telHref}><Phone size={16} aria-hidden="true" />{phoneLabel}</a>
         : <button type="button" className="map-contact-button map-contact-secondary" disabled={!telHref} onClick={() => setDialogKind('tel')}><Phone size={16} aria-hidden="true" />{phoneLabel}</button>)}
     </div>
-    {!compact && (!validateContactPhone(smsTarget) || (showPhone && !telHref)) && <p className="map-contact-note">{t('mapUi.contactPending', { defaultValue: '안전한 연락 연결 준비 중' })}</p>}
+    {!workerId && !compact && (!validateContactPhone(smsTarget) || (showPhone && !telHref)) && <p className="map-contact-note">{t('mapUi.contactPending', { defaultValue: '안전한 연락 연결 준비 중' })}</p>}
     {!compact && acceptsSms === false && <p className="map-contact-note">{t('mapUi.smsDeclined', { defaultValue: '문자 문의를 받지 않는 대상입니다.' })}</p>}
-    {!compact && smsHref && acceptsSms === undefined && <p className="map-contact-note">{t('mapUi.smsConsentUnknown', { defaultValue: '문자 수신 동의 정보가 확인되지 않았습니다.' })}</p>}
-    {!compact && (smsHref || (showPhone && telHref)) && <p className="map-contact-note">{t('mapUi.directContactWarning', { defaultValue: '연락 시 상대 번호가 문자·전화 앱에 표시됩니다.' })}</p>}
-    {dialogKind && modalPhone && <DesktopContactDialog kind={dialogKind} phone={modalPhone} onClose={() => setDialogKind(null)} />}
+    {!workerId && !compact && smsHref && acceptsSms === undefined && <p className="map-contact-note">{t('mapUi.smsConsentUnknown', { defaultValue: '문자 수신 동의 정보가 확인되지 않았습니다.' })}</p>}
+    {!compact && (workerId || smsHref || (showPhone && telHref)) && <p className="map-contact-note">{t('mapUi.directContactWarning', { defaultValue: '연락 시 상대 번호가 문자·전화 앱에 표시됩니다.' })}</p>}
+    {contactBusy && <p role="status" className="map-contact-note">{t('mapUi.workerContactLoading', { defaultValue: '연락 동의를 확인하고 있습니다…' })}</p>}
+    {contactError && <p role="alert" className="map-contact-note">{errorMessages[contactError]}</p>}
+    {mobileContact && <div>
+      <p className="map-contact-note">{t('mapUi.workerContactOpenHelp', { defaultValue: '앱이 열리지 않으면 아래 버튼을 눌러 주세요. 전송은 문자 앱에서 직접 합니다.' })}</p>
+      <a className="map-contact-button map-contact-primary" href={mobileContact.href}>{mobileContact.kind === 'sms' ? t('mapUi.openSmsApp', { defaultValue: '문자 앱 열기' }) : t('mapUi.openPhoneApp', { defaultValue: '전화 앱 열기' })}</a>
+    </div>}
+    {dialogKind && modalPhone && <DesktopContactDialog kind={dialogKind} phone={modalPhone} onClose={closeDialog} />}
   </div>;
 }
 
 export default function ContactActions(props: ContactActionsProps) {
   // Never retain a prepared recipient or draft when the parent target changes.
-  return <ContactActionsContent key={JSON.stringify([props.phone, props.smsPhone, props.body, props.acceptsSms])} {...props} />;
+  return <ContactActionsContent key={JSON.stringify([props.workerId, props.phone, props.smsPhone, props.body, props.acceptsSms])} {...props} />;
 }

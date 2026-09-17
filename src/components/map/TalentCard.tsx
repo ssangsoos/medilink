@@ -71,7 +71,7 @@ function TalentCardContent({ talent, hospitalName, distanceLabel, outOfRange, on
       <label className="map-contact-label" htmlFor={bodyId}>{t('mapUi.messageBody', { defaultValue: '문자 내용' })}</label>
       <textarea id={bodyId} rows={3} value={draft} onChange={event => setDraft(event.target.value)} />
     </> : <p className="map-contact-preview" aria-label={t('mapUi.messagePreview', { defaultValue: '문자 미리보기' })}>{body}</p>}
-    <ContactActions phone={phone} smsPhone={talent.mobile_phone || phone} body={body} acceptsSms={profileSmsConsent(talent)} />
+    <ContactActions workerId={talent.id} phone={phone} smsPhone={talent.mobile_phone || phone} body={body} acceptsSms={profileSmsConsent(talent)} />
   </section>;
 }
 

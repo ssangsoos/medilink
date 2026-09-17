@@ -294,7 +294,7 @@
     "passwordPlaceholder": "••••••••",
     "phone": "Phone number",
     "phonePlaceholder": "010-0000-0000",
-    "phonePublicHint": "This number will be shown to hospital members for job offers.",
+    "phonePublicHint": "Only with optional consent can hospital members initiate SMS/calls through the site. Your actual number may be revealed in the SMS/call app or QR code.",
     "privacyPolicyLink": "View privacy policy",
     "privacyRight1": "You can view and edit your personal information directly in the form above.",
     "privacyRight2": "You can request deletion of your personal information by deleting your account.",
@@ -429,13 +429,35 @@
     "deleteSuccessAlert": "Your account has been deleted. Thank you for using our service.",
     "errDeleteFailedPrefix": "An error occurred while deleting your account: "
   },
+  "workerContactConsent": {
+    "publicProfileNotice": "Existing public profile information, including your name, license/qualification type and general activity location, is displayed according to your profile visibility settings. This optional consent concerns phone-number sharing; refusing or withdrawing it does not hide your public profile. Turn off profile visibility separately to stop displaying your profile.",
+    "policyApplicability": "The new contact-sharing disclosure applies to a member’s contact details only after the existing change-notice procedure, rollout to the service and that member’s explicit consent. Its version date is not a retroactive effective date, and existing members are not automatically opted in. We retain the consent decision, notice version and server-recorded change time.",
+    "providerLabel": "Providing party",
+    "provider": "Smile-up Co., Ltd. (operator of Medinoti)",
+    "recipientLabel": "Recipients",
+    "recipient": "Logged-in Medinoti hospital members",
+    "purposeLabel": "Recipients’ purpose of use",
+    "purpose": "Recruitment proposals and recruitment-related contact",
+    "itemsLabel": "Information provided",
+    "items": "Phone number, together with your currently shared name, license/qualification type and general activity location (not your exact home address)",
+    "retentionLabel": "Recipients’ retention and use period",
+    "retention": "Hospital members must retain and use the information only until the recruitment/contact purpose is fulfilled or consent is withdrawn / the account is deleted, whichever occurs first. Legally mandated retention is excepted.",
+    "disclosure": "Your number is masked in lists, but the actual number appears in the SMS/call app and can also be revealed by a desktop QR code. This is NOT an anonymous intermediary service. Your number may remain on the recipient’s device and in messages or call history.",
+    "withdrawal": "You can withdraw anytime by unchecking this optional consent in Edit Profile and saving. Withdrawal blocks future access to your contact number through the site; it cannot remotely erase previously shared numbers or messages. The recipient retention obligation does not guarantee deletion of existing copies.",
+    "legacyNotice": "Consent to the current contact-sharing version has not been confirmed. To receive recruitment contact from hospitals, read the disclosure, explicitly select the checkbox and save. You can save your profile without selecting it.",
+    "versionNotice": "Contact-sharing notice version: {{version}}. The date in the version is not a retroactive effective date; it applies after rollout and your explicit consent.",
+    "saveUnverified": "The saved contact-consent state could not be verified. Reopen your profile to check its status before trying again.",
+    "policyTitle": "Article 4 (Third-party provision of personal information)",
+    "policyNotice": "The disclosure for contact-sharing version {{version}} appears in Article 4 below. This version label does not imply completed deployment or retroactive effect.",
+    "refusal": "You have the right to refuse. Refusal still allows signup and use of other services, but hospital members cannot initiate SMS/calls to you through the site."
+  },
   "consent": {
     "allAgree": "Agree to all",
     "privacyLabel": "[Required] Consent to collection and use of personal information",
     "termsLabel": "[Required] Agree to the Terms of Service",
     "ageLabel": "[Required] I am 14 years of age or older",
     "thirdPartyLabel": "[Optional] Consent to third-party provision (share contact with hospitals)",
-    "thirdPartyDesc": "For job offers, your name, contact number, and license type will be disclosed to hospital members. You can sign up without agreeing, and you can change this anytime from your dashboard.",
+    "thirdPartyDesc": "You have the right to refuse. Refusal still allows signup and use of other services, but hospital members cannot initiate SMS/calls to you through the site.",
     "viewContent": "View details",
     "privacyModalTitle": "Consent to Collection and Use of Personal Information",
     "companyName": "Smile-up Co., Ltd.",
@@ -461,6 +483,8 @@
     "termsFullLink": "View full Terms of Service"
   },
   "mapUi": {
+    "workerConsentPrompt": "To receive recruitment contact from hospitals, please review your contact-sharing consent.",
+    "workerConsentManage": "Contact consent settings",
     "qrFailed": "Could not create the QR code. Copy the number and message instead.",
     "qrAlt": "QR code to compose a text message",
     "qrGenerating": "Generating QR code…",
@@ -570,6 +594,15 @@
     "postingInquiryBody": "[{{title}}]\nHello, I am {{workerName}} ({{workerRole}}).\nI am contacting you about your job posting.\nCould you share the working conditions and application process?",
     "postingTitleHelp": "The posting title is automatically added to the first line of messages from a posting card.",
     "postingCardLabel": "Posting {{index}}/{{count}}: {{title}}",
-    "alwaysHiring": "Always hiring"
+    "alwaysHiring": "Always hiring",
+    "workerContactUnavailable": "This worker cannot currently be contacted. Their contact consent or profile visibility may have changed.",
+    "workerContactSignIn": "Please sign in and try again.",
+    "workerContactHospitalOnly": "Only hospital members can contact medical workers.",
+    "workerContactSetupRequired": "The contact feature is being prepared. Please try again later.",
+    "workerContactFailed": "Unable to load contact details. Please try again.",
+    "workerContactLoading": "Checking contact consent…",
+    "workerContactOpenHelp": "If the app does not open, use the button below. Send the message yourself in the SMS app.",
+    "openSmsApp": "Open SMS app",
+    "openPhoneApp": "Open phone app"
   }
 }

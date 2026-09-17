@@ -17,6 +17,27 @@
   background: #f7f8fa;
   overflow: hidden;
 }
+.mn-worker-consent-notice {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #edf2fe;
+  color: #1b4dd8;
+  font-size: 12px;
+}
+.mn-worker-consent-notice p { flex: 1; margin: 0; }
+.mn-worker-consent-notice button {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #cfdaf8;
+  border-radius: 8px;
+  background: white;
+  font: inherit;
+  font-weight: 700;
+}
 .mn-dashboard * {
   box-sizing: border-box;
 }

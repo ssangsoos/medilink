@@ -129,6 +129,21 @@ beforeEach(async () => {
   });
 });
 describe("redesigned dashboard integration", () => {
+  it.each([null, false, true])('offers legacy/declined/outdated worker contact consent settings (%j)', async consent => {
+    m.profile = { ...(m.profile as object), role: 'worker', worker_contact_consent: consent, worker_contact_consent_version: 'old-version' };
+    render(<Dashboard />);
+    const action = await screen.findByRole('button', { name: '연락 동의 설정' });
+    fireEvent.click(action);
+    expect(m.navigate).toHaveBeenCalledWith('/worker/profile#contact-consent');
+    expect(m.writes).not.toHaveBeenCalled();
+  });
+  it('does not prompt an already consenting worker or auto-change their consent', async () => {
+    m.profile = { ...(m.profile as object), role: 'worker', worker_contact_consent: true, worker_contact_consent_version: '2026-09-17-v1' };
+    render(<Dashboard />);
+    await screen.findByText('원장');
+    expect(screen.queryByRole('button', { name: '연락 동의 설정' })).not.toBeInTheDocument();
+    expect(m.writes).not.toHaveBeenCalled();
+  });
   it("removes a selected profile when it disappears from the safe public view", async () => {
     render(<Dashboard />);
     await screen.findByText("테스트병원");
