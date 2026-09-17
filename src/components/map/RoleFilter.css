@@ -1,0 +1,49 @@
+.mn-role-filter { min-width: 0; color: #151A22; background: #fff; font-size: 13px; }
+.mn-role-filter__row { display: flex; align-items: center; gap: 8px; min-width: 0; height: 60px; padding: 0 12px; border-bottom: 1px solid #E2E7EF; }
+.mn-role-filter__scroll { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin; overscroll-behavior-x: contain; }
+.mn-role-filter button, .mn-role-dialog button { min-width: 44px; min-height: 44px; font: inherit; cursor: pointer; }
+.mn-role-filter button:focus-visible, .mn-role-dialog button:focus-visible, .mn-role-dialog input:focus-visible { outline: 2px solid #1B4DD8; outline-offset: -2px; }
+.mn-role-filter button:disabled, .mn-role-dialog button:disabled { opacity: .5; cursor: not-allowed; }
+.mn-role-filter__chip { flex: 0 0 auto; border: 1px solid #E2E7EF; border-radius: 10px; padding: 0 16px; white-space: nowrap; background: #fff; color: #5A6376; font-weight: 600; }
+.mn-role-filter__chip[aria-pressed="true"] { color: #1B4DD8; background: #EDF2FE; border-color: #CFDAF8; }
+.mn-role-filter__add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; padding: 0 10px; border: 1px solid #CFDAF8; border-radius: 10px; color: #1B4DD8; background: #fff; }
+.mn-role-filter__error, .mn-role-dialog__error { margin: 0; padding: 8px 20px; color: #9D2635; font-size: 13px; overflow-wrap: anywhere; }
+.mn-role-dialog {
+  box-sizing: border-box;
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: min(85dvh, 760px);
+  margin: 0;
+  padding: 0;
+  border: 1px solid #E2E7EF;
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  color: #151A22;
+  background: #fff;
+  box-shadow: 0 -8px 40px #151a2220;
+  font-size: 14px;
+  overflow: hidden;
+}
+.mn-role-dialog[open] { display: flex; flex-direction: column; }
+.mn-role-dialog::backdrop { background: #151a2266; }
+.mn-role-dialog__header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 0 20px; }
+.mn-role-dialog__header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.mn-role-dialog__close { display: grid; place-items: center; flex-shrink: 0; background: transparent; border: 0; border-radius: 8px; color: #5A6376; }
+.mn-role-dialog__close span { position: relative; display: block; width: 16px; height: 16px; }
+.mn-role-dialog__close span::before, .mn-role-dialog__close span::after { position: absolute; content: ''; width: 18px; height: 2px; left: -1px; top: 7px; background: currentColor; transform: rotate(45deg); }
+.mn-role-dialog__close span::after { transform: rotate(-45deg); }
+.mn-role-dialog__hint { margin: 6px 20px 16px; color: #5A6376; font-size: 13px; flex-shrink: 0; }
+.mn-role-dialog__options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-height: 0; padding: 4px 20px 20px; overflow-y: auto; overscroll-behavior: contain; }
+.mn-role-dialog__option { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; border: 1px solid #E2E7EF; border-radius: 10px; cursor: pointer; overflow-wrap: anywhere; }
+.mn-role-dialog__option--selected { background: #EDF2FE; border-color: #CFDAF8; color: #1B4DD8; }
+.mn-role-dialog__option input { width: 18px; height: 18px; flex-shrink: 0; accent-color: #1B4DD8; }
+.mn-role-dialog__option:focus-within { outline: 2px solid #1B4DD8; outline-offset: -2px; }
+.mn-role-dialog__footer { display: flex; gap: 8px; flex-shrink: 0; padding: 12px 20px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid #E2E7EF; }
+.mn-role-dialog__cancel { flex: 1; border: 1px solid #E2E7EF; color: #5A6376; background: #fff; border-radius: 10px; }
+.mn-role-dialog__save { flex: 2; border: 1px solid #1B4DD8; background: #1B4DD8; color: #fff; border-radius: 10px; font-weight: 700; }
+@media (min-width: 768px) {
+  .mn-role-filter__row { padding: 0 28px; }
+  .mn-role-dialog { inset: 0; width: 520px; max-width: calc(100vw - 48px); max-height: min(80dvh, 720px); margin: auto; border: 1px solid #E2E7EF; border-radius: 16px; box-shadow: 0 16px 60px #151a2233; }
+}
