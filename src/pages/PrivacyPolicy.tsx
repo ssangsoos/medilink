@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Footer from '../components/Footer';
+import { useTranslation } from 'react-i18next';
+import { WorkerContactDisclosure } from '../components/WorkerContactConsent';
+import { WORKER_CONTACT_CONSENT_VERSION } from '../lib/workerContactConsent';
 
 export default function PrivacyPolicy() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* 헤더 */}
@@ -21,6 +25,7 @@ export default function PrivacyPolicy() {
 
           <div>
             <p className="text-gray-500 text-xs mb-4">시행일: 2026년 3월 29일</p>
+            <p className="text-gray-500 text-xs mb-4">{t('workerContactConsent.policyNotice', { version: WORKER_CONTACT_CONSENT_VERSION })}</p>
             <p>
               <strong>주식회사 스마일업</strong>(이하 "회사")은 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고
               이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
@@ -100,31 +105,10 @@ export default function PrivacyPolicy() {
             </ul>
           </section>
 
-          {/* 제4조 */}
+          {/* 제4조: 가입/프로필과 동일한 연락처 제공 안내 */}
           <section>
-            <h2 className="text-base font-bold text-gray-900 mb-3">제4조 (개인정보의 제3자 제공)</h2>
-            <p className="mb-2">회사는 정보주체의 동의를 받은 경우에 한하여 다음과 같이 개인정보를 제3자에게 제공합니다.</p>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-200 text-xs mt-2">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-200 px-3 py-2 text-left">제공받는 자</th>
-                    <th className="border border-gray-200 px-3 py-2 text-left">제공 항목</th>
-                    <th className="border border-gray-200 px-3 py-2 text-left">제공 목적</th>
-                    <th className="border border-gray-200 px-3 py-2 text-left">보유 기간</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-200 px-3 py-2">병원 회원</td>
-                    <td className="border border-gray-200 px-3 py-2">의료인력의 이름, 전화번호, 면허종류, 대략적 위치</td>
-                    <td className="border border-gray-200 px-3 py-2">채용 제안 및 연락</td>
-                    <td className="border border-gray-200 px-3 py-2">회원 탈퇴 시 또는 노출 해제 시까지</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-2 text-xs text-gray-500">※ 의료인력 회원은 "노출 설정"을 통해 언제든지 제3자 제공을 중단할 수 있습니다.</p>
+            <h2 className="text-base font-bold text-gray-900 mb-3">{t('workerContactConsent.policyTitle')}</h2>
+            <WorkerContactDisclosure />
           </section>
 
           {/* 제5조 */}
@@ -250,6 +234,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-base font-bold text-gray-900 mb-3">제12조 (개인정보 처리방침의 변경)</h2>
             <p>이 개인정보 처리방침은 2026년 3월 29일부터 적용됩니다. 변경 사항이 있을 경우 시행 7일 전부터 서비스 내 공지사항을 통해 고지할 것입니다.</p>
+            <p className="mt-2">{t('workerContactConsent.policyApplicability')}</p>
           </section>
 
         </div>

@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, X } from 'lucide-react';
+import WorkerContactConsent from './WorkerContactConsent';
 
 interface Props {
-  onValidChange: (allRequiredChecked: boolean) => void;
+  onValidChange: (allRequiredChecked: boolean, workerContactAccepted: boolean) => void;
   showThirdParty?: boolean; // 의료인력 회원만 제3자 제공 동의 표시
 }
 
@@ -19,7 +20,7 @@ export default function PrivacyConsent({ onValidChange, showThirdParty = false }
   const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   const updateValidity = (p: boolean, tm: boolean, a: boolean) => {
-    onValidChange(p && tm && a);
+    onValidChange(p && tm && a, showThirdParty && thirdParty);
   };
 
   const handlePrivacy = (v: boolean) => {
@@ -40,7 +41,7 @@ export default function PrivacyConsent({ onValidChange, showThirdParty = false }
     setTerms(checked);
     setAgeConfirm(checked);
     if (showThirdParty) setThirdParty(checked);
-    onValidChange(checked);
+    onValidChange(checked, showThirdParty && checked);
   };
 
   const allChecked = privacy && terms && ageConfirm && (!showThirdParty || thirdParty);
@@ -125,23 +126,13 @@ export default function PrivacyConsent({ onValidChange, showThirdParty = false }
 
         {/* [선택] 제3자 제공 동의 - 의료인력만 */}
         {showThirdParty && (
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              id="third-party"
-              checked={thirdParty}
-              onChange={(e) => setThirdParty(e.target.checked)}
-              className="mt-0.5 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-            <div className="flex-1">
-              <label htmlFor="third-party" className="text-sm font-bold text-gray-800 cursor-pointer select-none">
-                {t('consent.thirdPartyLabel')}
-              </label>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {t('consent.thirdPartyDesc')}
-              </p>
-            </div>
-          </div>
+          <WorkerContactConsent
+            checked={thirdParty}
+            onChange={accepted => {
+              setThirdParty(accepted);
+              onValidChange(privacy && terms && ageConfirm, accepted);
+            }}
+          />
         )}
       </div>
 

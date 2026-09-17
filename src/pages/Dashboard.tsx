@@ -14,9 +14,10 @@ import type { JobPosting } from "../types/jobPosting";
 import { MEDICAL_LICENSE_TYPES, HOSPITAL_TYPES } from "../lib/medicalConstants";
 import { hasMapPosition, matchesMapRoles } from "../lib/mapGeometry";
 import { haversineKm, formatDistance } from "../lib/distance";
+import { hasCurrentWorkerContactConsent } from '../lib/workerContactConsent';
 import "./Dashboard.css";
 
-type OwnProfile = MapProfile & { is_exposed?: boolean };
+type OwnProfile = MapProfile & { is_exposed?: boolean; worker_contact_consent?: boolean | null; worker_contact_consent_version?: string | null };
 const defaultCenter = { lat: 37.5665, lng: 126.978 };
 // Use local calendar date, not UTC midnight; existing deployment supports multiple regions.
 const today = () => {
@@ -445,6 +446,10 @@ export default function Dashboard() {
           </div>
         </details>
       </header>
+      {!hospitalAccount && !hasCurrentWorkerContactConsent(profile) && <aside className="mn-worker-consent-notice">
+        <p>{t('mapUi.workerConsentPrompt', { defaultValue: '병원의 채용 연락을 받으려면 연락처 제공 동의를 확인해 주세요.' })}</p>
+        <button type="button" onClick={() => navigate('/worker/profile#contact-consent')}>{t('mapUi.workerConsentManage', { defaultValue: '연락 동의 설정' })}</button>
+      </aside>}
       {hospitalAccount && (
         <PostingStatusBar
           postings={postings}

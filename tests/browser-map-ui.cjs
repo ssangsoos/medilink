@@ -51,7 +51,7 @@ export const supabase={auth:{getUser:async()=>({data:{user:{id:own.id}},error:nu
       }),
     );
   await page.addInitScript(() => localStorage.setItem("mn_lang", "ko"));
-  await page.goto("http://127.0.0.1:5178/dashboard");
+  await page.goto(`${process.env.QA_BASE_URL || 'http://127.0.0.1:5178'}/dashboard`);
   await page.waitForSelector(".mn-dashboard").catch((e) => {
     console.error("LOAD ERRORS", errors, consoleErrors);
     throw e;
@@ -109,7 +109,7 @@ export const supabase={auth:{getUser:async()=>({data:{user:{id:own.id}},error:nu
       assert(primaryAction.y>=card.y && primaryAction.y+primaryAction.height<=card.y+card.height+1,'primary contact action visible without scrolling');
       await page.screenshot({ path: path.join(out, `${width}-talent.png`) });
       await page.locator('.mn-map-callout .map-contact-actions button').first().scrollIntoViewIfNeeded();
-      assert(await page.locator('.mn-map-callout .map-contact-actions button').first().isDisabled(),'masked phone must be disabled');
+      assert(await page.locator('.mn-map-callout .map-contact-actions button').first().isEnabled(),'display-masked worker phone must allow a permission-checked contact attempt');
       await page.screenshot({path:path.join(out,`${width}-talent-actions.png`)});
       await page.keyboard.press("Escape");
       await page.locator(".mn-role-filter__add").click();
