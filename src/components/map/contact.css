@@ -1,0 +1,100 @@
+.map-contact-ui {
+  --contact-primary: #1B4DD8;
+  --contact-pale: #EDF2FE;
+  --contact-ink: #151A22;
+  --contact-sub: #5A6376;
+  --contact-muted: #8A93A5;
+  --contact-border: #E2E7EF;
+  --contact-card: #F4F7FE;
+  color: var(--contact-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.map-contact-ui *, .map-contact-ui *::before, .map-contact-ui *::after { box-sizing: border-box; }
+.map-contact-ui h2, .map-contact-ui h3, .map-contact-ui h4, .map-contact-ui p { margin: 0; }
+.map-contact-ui button, .map-contact-ui a, .map-contact-ui select, .map-contact-ui summary { -webkit-tap-highlight-color: transparent; }
+.map-contact-ui :is(button, a, select, textarea, summary):focus-visible { outline: 3px solid var(--contact-primary); outline-offset: 3px; }
+.map-contact-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.map-contact-header > div { min-width: 0; }
+.map-contact-header h2 { font-size: 18px; font-weight: 800; line-height: 1.4; padding-top: 8px; }
+.map-contact-ui .map-contact-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: var(--contact-sub); cursor: pointer; }
+.map-contact-close:hover { background: var(--contact-pale); }
+.map-contact-ui .map-contact-subtitle { margin-top: 3px; color: var(--contact-sub); font-size: 12px; }
+.map-contact-ui .map-contact-address { display: flex; align-items: flex-start; gap: 5px; margin-top: 10px; color: var(--contact-sub); }
+.map-contact-address svg { flex-shrink: 0; margin-top: 3px; }
+.map-contact-ui .map-contact-number { margin: 10px 0 4px; font-size: 14px; font-weight: 650; letter-spacing: .025em; }
+.map-contact-label { display: block; font-size: 12px; font-weight: 700; margin: 12px 0 6px; }
+.map-contact-ui select, .map-contact-ui textarea { width: 100%; min-height: 44px; border: 1px solid var(--contact-border); background: white; color: var(--contact-ink); border-radius: 10px; padding: 10px; font-family: inherit; font-size: 14px; line-height: 1.5; }
+.map-contact-ui textarea { resize: vertical; }
+.map-contact-prewrap { white-space: pre-wrap; }
+.map-contact-ui .map-contact-preview { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--contact-card); color: var(--contact-sub); white-space: pre-wrap; font-size: 12px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.map-talent-card > .map-contact-actions { position: sticky; bottom: -14px; z-index: 2; margin-inline: -14px; padding: 8px 14px 12px; background: white; border-top: 1px solid var(--contact-border); }
+.map-contact-actions { margin-top: 12px; }
+.map-contact-action-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.map-contact-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border: 1px solid transparent; padding: 10px 12px; border-radius: 11px; text-decoration: none; font: inherit; font-weight: 750; cursor: pointer; text-align: center; }
+.map-contact-action-row > .map-contact-primary { flex: 1 1 110px; }
+.map-contact-action-row > .map-contact-secondary { flex: 1 0 84px; }
+.map-template-chips { display: flex; gap: 6px; overflow-x: auto; padding: 3px; margin-inline: -3px; scrollbar-width: thin; }
+.map-template-chips button { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; border: 1px solid var(--contact-border); border-radius: 999px; color: var(--contact-sub); background: white; font: inherit; font-weight: 700; cursor: pointer; }
+.map-template-chips button[aria-pressed="true"] { color: var(--contact-primary); border-color: var(--contact-primary); background: var(--contact-pale); }
+.map-contact-actions.is-ghost .map-contact-primary { color: var(--contact-primary); background: white; border-color: var(--contact-border); }
+.map-contact-qr { display: block; max-width: 100%; height: auto; margin: 12px auto; }
+.map-qr-devices { margin-top: 12px; }
+.map-contact-primary { background: var(--contact-primary); color: white; }
+.map-contact-secondary { background: white; border-color: var(--contact-border); color: var(--contact-primary); }
+.map-contact-button:hover:not(:disabled) { filter: brightness(.95); }
+.map-contact-ui button:disabled { cursor: not-allowed; color: var(--contact-sub); background: #F0F2F6; border-color: var(--contact-border); }
+.map-contact-ui .map-contact-note { font-size: 11px; color: var(--contact-sub); line-height: 1.6; margin-top: 7px; }
+.map-talent-card { width: 100%; padding: 14px; background: white; border: 1px solid var(--contact-border); border-radius: 18px; box-shadow: 0 8px 30px #151A221C; }
+.map-contact-ui .map-talent-shift { margin-top: 10px; font-size: 12px; font-weight: 650; }
+.map-contact-ui .map-commute-badge { display: inline-block; border-radius: 8px; padding: 5px 8px; margin-top: 10px; font-size: 11px; font-weight: 700; }
+.map-commute-badge.is-within { color: #AA2936; background: #FFF0F1; }
+.map-commute-badge.is-outside { color: #792CB1; background: #F5ECFF; }
+.map-talent-details { margin-top: 6px; border-top: 1px solid var(--contact-border); }
+.map-contact-ui summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-size: 12px; color: var(--contact-sub); font-weight: 650; }
+.map-talent-details p { margin-bottom: 8px; }
+.map-hospital-sheet { width: 100%; min-width: 0; max-height: inherit; padding: 8px 18px max(18px, env(safe-area-inset-bottom)); background: white; border: 1px solid var(--contact-border); border-radius: 22px 22px 0 0; overflow-y: auto; overscroll-behavior-y: contain; box-shadow: 0 -6px 28px #151A221A; }
+.map-sheet-handle { width: 36px; height: 4px; border-radius: 3px; background: var(--contact-border); margin: 0 auto 7px; }
+.map-posting-section { margin-top: 16px; min-width: 0; }
+.map-posting-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.map-posting-header > h3 { flex-shrink: 0; }
+.map-posting-header h3, .map-hospital-general-contact h3 { font-size: 14px; font-weight: 750; }
+.map-posting-arrows { display: none; gap: 4px; }
+.map-posting-arrows button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--contact-border); border-radius: 12px; color: var(--contact-primary); background: white; cursor: pointer; }
+.map-posting-rail { display: flex; align-items: stretch; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 18px; padding: 2px 18px 8px; margin-inline: -18px; scrollbar-width: thin; scrollbar-color: var(--contact-border) transparent; }
+/* 390px sheet: 354px inner rail, 318px card, 12px gap and next-card peek. */
+.map-posting-card { flex: 0 0 min(318px, calc(100% - 34px)); min-width: 0; max-width: 318px; display: flex; flex-direction: column; scroll-snap-align: start; padding: 14px; border: 1px solid var(--contact-border); border-radius: 16px; background: var(--contact-card); }
+.map-posting-rail.is-single .map-posting-card { flex-basis: 100%; max-width: none; }
+.map-posting-card h4 { font-weight: 800; font-size: 16px; line-height: 1.4; }
+.map-posting-card-header { display: flex; align-items: flex-start; gap: 8px; justify-content: space-between; }
+.map-posting-card-header h4 { min-width: 0; }
+.map-posting-always { flex-shrink: 0; border-radius: 6px; padding: 3px 6px; color: #137547; background: #E6F7ED; font-size: 10px; font-weight: 750; }
+.map-posting-properties { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.map-posting-properties > span { border: 1px solid var(--contact-border); border-radius: 6px; padding: 3px 6px; color: var(--contact-sub); background: white; font-size: 11px; }
+.map-posting-properties .map-posting-category { color: var(--contact-primary); font-weight: 700; }
+.map-posting-properties .map-posting-wage { color: var(--contact-ink); font-weight: 750; }
+.map-contact-ui .map-posting-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; color: var(--contact-sub); font-size: 12px; margin: 10px 0 12px; }
+.map-posting-card > .map-contact-actions { margin-top: auto; padding-top: 12px; }
+.map-contact-kakao { width: 100%; margin-top: 8px; background: #FEE500; color: #151A22; }
+.map-posting-dots { display: flex; align-items: center; justify-content: flex-start; gap: 0; min-width: 0; overflow-x: auto; margin-left: auto; scrollbar-width: thin; }
+.map-posting-dots button { flex: 0 0 44px; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; cursor: pointer; }
+.map-posting-dots button span { display: block; width: 6px; height: 6px; border-radius: 4px; background: var(--contact-border); transition: width .15s; }
+.map-posting-dots button[aria-current="true"] span { width: 16px; background: var(--contact-primary); }
+.map-posting-empty { padding: 14px; border-radius: 12px; background: var(--contact-card); color: var(--contact-sub); }
+.map-default-conditions { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--contact-border); }
+.map-default-conditions h4 { color: var(--contact-ink); }
+.map-hospital-general-contact { border-top: 1px solid var(--contact-border); margin-top: 14px; padding-top: 14px; }
+.map-contact-dialog { position: fixed; inset: 0; margin: auto; padding: 20px; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; border: 1px solid var(--contact-border); border-radius: 20px; box-shadow: 0 16px 60px #151A2240; background: white; }
+.map-contact-dialog::backdrop { background: #151A2273; }
+.map-contact-dialog > .map-contact-button { width: 100%; }
+@media (min-width: 768px) {
+  .map-hospital-sheet { border-radius: 20px; padding-top: 14px; box-shadow: 0 8px 30px #151A221C; }
+  .map-sheet-handle { display: none; }
+  .map-posting-arrows { display: flex; }
+}
+@media (max-width: 767px) {
+  .map-contact-ui select, .map-contact-ui textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .map-posting-dots button span { transition: none; } }
