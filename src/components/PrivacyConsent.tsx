@@ -151,7 +151,7 @@ export default function PrivacyConsent({ onValidChange, showThirdParty = false }
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-lg">{t('consent.privacyModalTitle')}</h3>
-              <button onClick={() => setIsPrivacyOpen(false)} className="text-gray-500 hover:text-black">
+              <button type="button" onClick={() => setIsPrivacyOpen(false)} className="text-gray-500 hover:text-black">
                 <X size={24} />
               </button>
             </div>
@@ -188,7 +188,7 @@ export default function PrivacyConsent({ onValidChange, showThirdParty = false }
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-lg">{t('consent.termsModalTitle')}</h3>
-              <button onClick={() => setIsTermsOpen(false)} className="text-gray-500 hover:text-black">
+              <button type="button" onClick={() => setIsTermsOpen(false)} className="text-gray-500 hover:text-black">
                 <X size={24} />
               </button>
             </div>
