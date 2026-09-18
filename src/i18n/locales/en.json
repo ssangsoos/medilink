@@ -1,4 +1,31 @@
 {
+  "recovery": {
+    "title": "Reset password",
+    "email": "Account email",
+    "send": "Send reset link",
+    "sending": "Sending…",
+    "cooldown": "Please wait one minute before requesting another link.",
+    "sent": "If an account uses this email, a password reset link will be sent. Check your inbox and spam folder.",
+    "requestError": "We could not request a reset link. Check your connection and try again. If the problem continues, contact support below.",
+    "rateError": "Too many requests. Wait at least one minute before trying again.",
+    "emailHelp": "Find account email",
+    "emailHelpText": "Your login ID is the email used at signup. Search your inboxes for “Medinoti” or “메디노티” and check saved logins. If you still need help, contact support. We cannot look up or disclose account emails here.",
+    "safety": "Never send your password, reset link, or ID documents. Email help does not bypass account verification.",
+    "login": "Back to login",
+    "resetTitle": "Choose a new password",
+    "password": "New password",
+    "confirm": "Confirm new password",
+    "passwordHint": "Use at least 8 characters.",
+    "mismatch": "The passwords do not match.",
+    "checking": "Checking your reset link…",
+    "invalid": "This reset link is missing, expired, or already used. Request a new link and open the latest email.",
+    "save": "Save new password",
+    "saving": "Saving…",
+    "updated": "Your password has been changed. Log in with your new password.",
+    "updateError": "Could not change your password. The link may have expired, or the password may not meet the account policy (including reusing the old password). Try a different password or request a new link.",
+    "signOutError": "Your password was changed, but we could not sign out this browser. Check your connection and sign out before logging in again.",
+    "resend": "Request a new reset link"
+  },
   "common": {
     "appName": "Medinoti",
     "checking": "Checking..."
