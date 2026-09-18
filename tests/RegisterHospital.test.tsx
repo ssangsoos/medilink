@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   mapsPending: false,
   mapLanguage: 'ko',
   loaderConfig: vi.fn(),
+  scrollIntoView: vi.fn(),
   searchProps: vi.fn(),
   place: {} as google.maps.places.PlaceResult,
   geocode: vi.fn(), signUp: vi.fn(), insert: vi.fn(), from: vi.fn(), signOut: vi.fn(),
@@ -77,6 +78,124 @@ beforeEach(() => {
   mocks.from.mockReset().mockReturnValue({ insert: mocks.insert });
   vi.stubGlobal('google', { maps: { Geocoder: class { geocode = mocks.geocode; } } });
   vi.spyOn(window, 'alert').mockImplementation(() => {});
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: mocks.scrollIntoView.mockReset() });
+});
+
+function primary() { return document.querySelector<HTMLButtonElement>('form button.shadow-lg')!; }
+
+describe('guided hospital signup CTA', () => {
+  it('offers explicit road-address cleanup after the real screenshot ambiguity, preserving detail and reconfirming', async () => {
+    mocks.geocode.mockResolvedValueOnce({ results: [result({ partial_match: true }), result({ partial_match: true })] });
+    renderForm(); manual(); fillRequired();
+    typeAddress('대전서구 대덕대로203 둔산미래빌딩 5층');
+    fireEvent.change(screen.getByPlaceholderText('hospitalForm.detailAddressPlaceholderWithExample'), { target: { value: '기존 상세' } });
+    fireEvent.click(primary());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.addressNotPrecise'));
+    expect(addressInput()).toHaveValue('대전서구 대덕대로203 둔산미래빌딩 5층'); noWrites();
+    expect(screen.getByText('대전 서구 대덕대로 203')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'hospitalForm.useRoadAddressSuggestion' })); await resolved();
+    expect(addressInput()).toHaveValue('대전 서구 대덕대로 203');
+    expect(screen.getByPlaceholderText('hospitalForm.detailAddressPlaceholderWithExample')).toHaveValue('기존 상세 둔산미래빌딩 5층');
+    expect(mocks.geocode).toHaveBeenLastCalledWith({ address: '대전 서구 대덕대로 203' });
+    noWrites(); confirm(); noWrites(); fireEvent.click(primary());
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalledTimes(1));
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ address: '대전 서구 대덕대로 203', detail_address: '기존 상세 둔산미래빌딩 5층' });
+  });
+  it('guides a manual address through lookup and explicit confirmation before signup', async () => {
+    renderForm(); manual(); fillRequired();
+    typeAddress();
+    expect(primary()).toBeEnabled();
+    expect(primary()).toHaveTextContent('hospitalForm.verifyAddressContinue');
+    expect(screen.getByRole('region', { name: 'hospitalForm.signupRequirements' })).toBeVisible();
+    fireEvent.click(primary()); await resolved();
+    expect(mocks.geocode).toHaveBeenCalledWith({ address: ADDRESS });
+    expect(screen.getByRole('checkbox')).toHaveFocus(); noWrites();
+    expect(primary()).toHaveTextContent('hospitalForm.reviewMapContinue');
+    fireEvent.click(primary()); noWrites();
+    confirm(); noWrites();
+    fireEvent.click(primary());
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalledTimes(1));
+    expect(mocks.signUp).toHaveBeenCalledTimes(1);
+  });
+  it.each(['failure', 'loading'])('makes Maps %s actionable from the bottom without writes', mode => {
+    mocks.mapsFail = mode === 'failure'; mocks.mapsPending = mode === 'loading';
+    renderForm(); manual(); fillRequired(); typeAddress();
+    expect(primary()).toBeEnabled(); fireEvent.click(primary()); noWrites();
+    expect(document.activeElement).toHaveAttribute('id', 'hospital-maps-status');
+    expect(screen.getByRole('region', { name: 'hospitalForm.signupRequirements' })).toHaveTextContent(mode === 'failure' ? 'hospitalForm.mapsUnavailable' : 'hospitalForm.mapsLoading');
+    expect(mocks.geocode).not.toHaveBeenCalled();
+  });
+  it('focuses a visible lookup error and permits retry without implicit signup', async () => {
+    mocks.geocode.mockRejectedValueOnce(new Error('REQUEST_DENIED'));
+    renderForm(); manual(); fillRequired(); typeAddress(); fireEvent.click(primary());
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.addressLookupFailed'));
+    expect(document.activeElement).toHaveAttribute('id', 'hospital-location');
+    expect(mocks.scrollIntoView).toHaveBeenLastCalledWith({ block: 'center' });
+    expect(mocks.scrollIntoView.mock.instances.at(-1)).toBe(document.activeElement);
+    expect(primary()).toBeEnabled(); fireEvent.click(primary()); await resolved(); noWrites();
+  });
+  it('returns missing location checklist items to an editable address, never an empty map container', () => {
+    renderForm();
+    fireEvent.click(screen.getByRole('button', { name: /hospitalForm.verifiedAddressRequirement.*hospitalForm.requirementPending/ }));
+    expect(addressInput()).toHaveFocus();
+    expect(addressInput()).not.toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: 'hospitalForm.verifyAddress' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: /hospitalForm.confirmMapLocation.*hospitalForm.requirementPending/ }));
+    expect(addressInput()).toHaveFocus(); noWrites();
+  });
+  it('keeps CTA lookup pending/duplicate/stale guards when an address changes mid-request', async () => {
+    let oldResolve!: (value: unknown) => void;
+    mocks.geocode.mockImplementationOnce(() => new Promise(resolve => { oldResolve = resolve; }));
+    renderForm(); manual(); fillRequired(); typeAddress();
+    fireEvent.click(primary()); expect(primary()).toBeDisabled(); submit();
+    expect(mocks.geocode).toHaveBeenCalledTimes(1); noWrites();
+    typeAddress('서울특별시 강남구 압구정로 154');
+    expect(primary()).toBeEnabled(); fireEvent.click(primary()); await resolved();
+    await act(async () => oldResolve({ results: [result({ geometry: { location: { lat: () => 36, lng: () => 128 }, location_type: 'ROOFTOP' } })] }));
+    expect(screen.getByTestId('map')).toHaveAttribute('data-lat', String(coords.lat));
+    expect(screen.getByRole('checkbox')).not.toBeChecked(); noWrites();
+    confirm(); noWrites(); fireEvent.click(primary());
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalledTimes(1));
+    expect(mocks.insert.mock.calls[0][0][0]).toMatchObject({ address: '서울특별시 강남구 압구정로 154', latitude: coords.lat });
+  });
+  it('recovers Maps through the retry reached from the CTA without losing typed details', async () => {
+    mocks.mapsFail = true;
+    renderForm(); manual(); fillRequired(); typeAddress(); fireEvent.click(primary());
+    expect(document.activeElement).toHaveAttribute('id', 'hospital-maps-status');
+    mocks.mapsFail = false;
+    fireEvent.click(screen.getByRole('button', { name: 'hospitalForm.retryMaps' }));
+    expect(addressInput()).toHaveValue(ADDRESS); expect(nameInput()).toHaveValue(NAME);
+    expect(primary()).toHaveTextContent('hospitalForm.verifyAddressContinue');
+    fireEvent.click(primary()); await resolved(); noWrites();
+  });
+  it('shows specific required inputs inline and in the actionable bottom checklist', () => {
+    renderForm(); manual(); fireEvent.click(primary()); noWrites();
+    expect(nameInput()).toHaveAttribute('aria-invalid', 'true');
+    expect(addressInput()).toHaveAttribute('aria-invalid', 'true');
+    expect(nameInput()).toHaveFocus();
+    const requirements = screen.getByRole('region', { name: 'hospitalForm.signupRequirements' });
+    expect(requirements).toHaveTextContent('hospitalForm.emailIdLabel');
+    expect(requirements).toHaveTextContent('hospitalForm.password');
+    expect(window.alert).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /hospitalForm.emailIdLabel.*hospitalForm.requirementPending/ }));
+    expect(screen.getByPlaceholderText('hospitalForm.emailPlaceholder')).toHaveFocus();
+  });
+  it('blocks missing credentials and consent after confirmation without alerts or automatic writes', async () => {
+    renderForm(); manual(); typeAddress();
+    fireEvent.change(nameInput(), { target: { value: NAME } });
+    fireEvent.click(primary()); await resolved(); confirm(); fireEvent.click(primary()); noWrites();
+    expect(screen.getByPlaceholderText('hospitalForm.emailPlaceholder')).toHaveFocus();
+    fireEvent.change(screen.getByPlaceholderText('hospitalForm.emailPlaceholder'), { target: { value: 'mock@example.test' } });
+    fireEvent.click(primary()); noWrites();
+    expect(screen.getByPlaceholderText('••••••••')).toHaveFocus();
+    fireEvent.change(screen.getByPlaceholderText('••••••••'), { target: { value: 'password' } });
+    fireEvent.click(primary()); noWrites();
+    expect(document.activeElement).toHaveAttribute('id', 'hospital-consent');
+    expect(screen.getByRole('region', { name: 'hospitalForm.signupRequirements' })).toHaveTextContent('hospitalForm.errAgreeRequired');
+    expect(window.alert).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('test consent')); noWrites(); fireEvent.click(primary());
+    await waitFor(() => expect(mocks.insert).toHaveBeenCalledTimes(1));
+  });
 });
 
 describe('hospital address registration (all external services mocked)', () => {
@@ -144,12 +263,13 @@ describe('hospital address registration (all external services mocked)', () => {
     let reject!: (error: Error) => void;
     mocks.geocode.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
     renderForm(); manual(); fillRequired(); typeAddress(); lookup();
-    expect(screen.getByRole('button', { name: 'hospitalForm.registerSubmit' })).toBeDisabled();
+    expect(primary()).toBeDisabled();
+    expect(primary()).toHaveTextContent('hospitalForm.addressLookupPending');
     submit(); noWrites();
     await act(async () => reject(new Error('REQUEST_DENIED')));
     expect(screen.getByRole('alert')).toHaveTextContent('hospitalForm.addressLookupFailed');
-    submit(); noWrites();
-    lookup(); await resolved();
+    expect(primary()).toBeEnabled();
+    fireEvent.click(primary()); await resolved(); noWrites();
   });
   it.each([
     ['zero results', []], ['ambiguous results', [result(), result()]],
@@ -227,14 +347,17 @@ describe('hospital address registration (all external services mocked)', () => {
     ['city', ['locality', 'political']], ['road', ['route']],
     ['mixed broad/business', ['establishment', 'administrative_area_level_3']],
     ['missing types', undefined], ['empty types', []], ['generic POI', ['point_of_interest']],
-  ])('rejects autocomplete %s even with domestic coordinates and an address', async (_, types) => {
+  ])('rejects autocomplete %s and requires fresh precise geocoding plus confirmation', async (_, types) => {
     mocks.place = { name: NAME, types: types as string[] | undefined, formatted_address: ADDRESS,
       geometry: { location: { lat: () => coords.lat, lng: () => coords.lng } as google.maps.LatLng } };
     renderForm(); fireEvent.click(screen.getByText('test select place')); fillRequired();
     const checkbox = screen.queryByRole('checkbox', { name: 'hospitalForm.confirmMapLocation' });
     if (checkbox) fireEvent.click(checkbox);
-    submit(); await act(async () => {}); noWrites();
     expect(screen.queryByTestId('map')).not.toBeInTheDocument();
+    expect(mocks.geocode).not.toHaveBeenCalled();
+    fireEvent.click(primary()); await resolved(); noWrites();
+    expect(mocks.geocode).toHaveBeenCalledWith({ address: ADDRESS });
+    expect(screen.getByRole('checkbox', { name: 'hospitalForm.confirmMapLocation' })).not.toBeChecked();
     expect(screen.getByRole('button', { name: 'hospitalForm.verifyAddress' })).toBeVisible();
     expect(addressInput()).toHaveValue(ADDRESS);
   });
@@ -286,7 +409,7 @@ it('labels postcode as an optional Korean helper in every locale', () => {
   expect(ja.hospitalForm.searchRoadAddress).toBe('韓国の住所検索');
 });
 it('provides all new hospital fallback strings in Korean, English and Japanese', () => {
-  const keys = ['nameSearchLoading', 'nameSearchDetails', 'nameSearchEmpty', 'nameSearchError', 'nameSearchResults', 'manualAddressRegister', 'searchCoverageHelp', 'searchRoadAddress', 'verifyAddress', 'addressLookupPending', 'addressLookupFailed', 'addressNotPrecise', 'mapsUnavailable', 'mapsLoading', 'retryMaps', 'confirmMapLocation', 'mapLocationHelp', 'locationRequired', 'placeMissingLocation', 'closeAddressSearch', 'typedAddressHelp', 'postcodeUnavailable'];
+  const keys = ['signupRequirements', 'signupStepsHelp', 'verifyAddressContinue', 'reviewMapContinue', 'reviewMapsStatus', 'verifiedAddressRequirement', 'consentRequirement', 'requirementComplete', 'requirementPending', 'locationReady', 'requiredLabel', 'requiredFieldMessage', 'addressCorrectionHelp', 'editAddress', 'roadAddressSuggestionHelp', 'suggestedDetailAddress', 'useRoadAddressSuggestion', 'nameSearchLoading', 'nameSearchDetails', 'nameSearchEmpty', 'nameSearchError', 'nameSearchResults', 'manualAddressRegister', 'searchCoverageHelp', 'searchRoadAddress', 'verifyAddress', 'addressLookupPending', 'addressLookupFailed', 'addressNotPrecise', 'mapsUnavailable', 'mapsLoading', 'retryMaps', 'confirmMapLocation', 'mapLocationHelp', 'locationRequired', 'placeMissingLocation', 'closeAddressSearch', 'typedAddressHelp', 'postcodeUnavailable'];
   for (const locale of [ko, en, ja]) for (const key of keys) {
     expect((locale.hospitalForm as Record<string, string>)[key], key).toBeTruthy();
   }
