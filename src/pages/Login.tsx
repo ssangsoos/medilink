@@ -91,6 +91,10 @@ export default function Login() {
             {loading ? t('login.submitting') : t('login.submit')}
           </button>
 
+          <div className="flex flex-wrap justify-center gap-4 text-sm">
+            <Link to="/forgot-password" className="text-blue-700 underline">{t('recovery.title')}</Link>
+            <Link to="/forgot-password#email-help" className="text-blue-700 underline">{t('recovery.emailHelp')}</Link>
+          </div>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               {t('login.noAccount')}{' '}
