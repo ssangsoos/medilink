@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>메디노티 Medinoti — 비밀번호 재설정 / Reset password</title>
+</head>
+<body style="margin:0;padding:24px 12px;background:#f3f4f6;color:#111827;font-family:Arial,'Apple SD Gothic Neo',sans-serif;line-height:1.6;">
+  <table role="presentation" style="width:100%;max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;">
+    <tr><td style="padding:28px;">
+      <p style="margin:0 0 16px;color:#2563eb;font-size:24px;font-weight:bold;">메디노티 Medinoti</p>
+      <h1 style="font-size:22px;">비밀번호 재설정 <span lang="en">/ Reset password</span></h1>
+      <p>메디노티 계정의 비밀번호 재설정을 요청하셨습니다. 아래 버튼으로 새 비밀번호를 설정해 주세요.</p>
+      <p lang="en">You requested a password reset for your Medinoti account. Use the button below to choose a new password.</p>
+      <p style="margin:24px 0;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;">비밀번호 재설정 / Reset password</a></p>
+      <p>버튼이 작동하지 않으면 아래 주소를 복사해 브라우저에서 열 수 있습니다.</p>
+      <p lang="en">If the button does not work, copy this address into your browser:</p>
+      <p style="font-size:13px;overflow-wrap:anywhere;word-break:break-all;">{{ .ConfirmationURL }}</p>
+      <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+      <h2 style="font-size:18px;">링크 대신 코드 사용 <span lang="en">/ Use a code instead</span></h2>
+      <p>메일에서 링크를 열 수 없다면 메디노티의 아래 주소를 직접 입력하여 방문해 주세요. 가입 이메일과 아래 숫자 복구 코드를 입력한 뒤 새 비밀번호를 설정할 수 있습니다. 코드를 URL에 붙이지 마세요.</p>
+      <p lang="en">If you cannot open links in this email, type the Medinoti address below directly into your browser. Enter your account email and the numeric recovery code below, then choose a new password. Do not add the code to the URL.</p>
+      <p><a href="https://www.medinoti.com/reset-password" style="color:#1d4ed8;overflow-wrap:anywhere;">https://www.medinoti.com/reset-password</a></p>
+      <p style="margin-bottom:4px;">일회용 복구 코드 <span lang="en">/ One-time recovery code</span></p>
+      <p style="font-size:28px;font-weight:bold;letter-spacing:4px;background:#eff6ff;padding:16px;text-align:center;">{{ .Token }}</p>
+      <p>가장 최근 이메일의 링크 또는 코드를 한 번만 사용해 주세요. 만료되었거나 이미 사용한 경우 메디노티에서 새 재설정 이메일을 요청해 주세요.</p>
+      <p lang="en">Use the link or code from your latest email only once. If it has expired or already been used, request a new reset email on Medinoti.</p>
+      <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+      <p style="font-weight:bold;">복구 코드, 재설정 링크, 비밀번호는 누구에게도 공유하지 마세요. 메디노티는 이를 이메일로 보내 달라고 요청하지 않습니다.</p>
+      <p lang="en" style="font-weight:bold;">Never share your recovery code, reset link, or password with anyone. Medinoti will never ask you to send them by email.</p>
+      <p>비밀번호 재설정을 요청하지 않았다면 이 이메일을 무시해 주세요.</p>
+      <p lang="en">If you did not request this password reset, ignore this email.</p>
+    </td></tr>
+  </table>
+</body>
+</html>

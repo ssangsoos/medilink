@@ -1,5 +1,15 @@
 {
   "recovery": {
+    "enterCode": "Enter the recovery code from your email",
+    "codeHelp": "Cannot open the email link? Open the Medinoti reset page directly (https://www.medinoti.com/reset-password) and enter your account email and the numeric code from your latest password reset email. If the email has no code, request a new reset email.",
+    "code": "Password recovery code",
+    "codeHint": "Enter the 6–10 digit code shown in your email. Each code can be used only once.",
+    "codeFormat": "Enter a numeric code with 6–10 digits.",
+    "verifyCode": "Verify recovery code",
+    "verifyingCode": "Verifying code…",
+    "codeInvalid": "The email or code is invalid, or the code has expired or already been used. Check your latest email or request a new reset email.",
+    "codeNetworkError": "We could not verify the code. Check your connection, wait a moment and enter the code again. If it still fails, request a new reset email.",
+    "codeSafety": "Never share your recovery code or reset link with anyone. If you did not request the email, ignore it.",
     "title": "Reset password",
     "email": "Account email",
     "send": "Send reset link",

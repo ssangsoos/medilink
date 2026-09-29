@@ -42,6 +42,8 @@ export default function ForgotPassword() {
       {sent && <p role="status">{t('recovery.sent')}</p>}
       {error && <p role="alert" className="text-red-700">{t(error)}</p>}
     </form>
+    <p>{t('recovery.codeHelp')}</p>
+    <Link className="block text-blue-700 underline" to="/reset-password">{t('recovery.enterCode')}</Link>
     <section id="email-help" aria-labelledby="email-help-title" className="space-y-3 border-t pt-4">
       <h2 id="email-help-title" className="font-bold">{t('recovery.emailHelp')}</h2><p>{t('recovery.emailHelpText')}</p>
       <a className="text-blue-700 underline" href="mailto:ssangsoos@gmail.com">ssangsoos@gmail.com</a><p>{t('recovery.safety')}</p>
